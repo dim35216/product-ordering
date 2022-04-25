@@ -137,7 +137,7 @@ class Parser:
 
             elif t == ':goal':
                 assert len(group) == 1
-                self.goal, self.preferences = self.parse_goal(group[0])
+                self.goal, self.preferences = parse_goal(group[0])
 
             elif t == ':metric':
                 assert len(group) == 2
