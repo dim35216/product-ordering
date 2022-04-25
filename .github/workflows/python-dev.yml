@@ -38,10 +38,10 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint --fail-under=7 $(git ls-files '*.py')
     - name: Static code checking with mypy
       run: |
-        mypy src/
+        mypy src/ --ignore-missing-imports
     - name: Test with unittest
       run: |
-        python -m unittest discover -s test/ -p "test_*.py"
+        python -m unittest discover -s test/pddl/ -p "test_*.py"
