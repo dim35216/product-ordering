@@ -1,8 +1,7 @@
-from typing import Set, Tuple, Dict, Any
+from typing import Set, Dict, Any
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from utils import *
 from action import Action
 
@@ -11,8 +10,11 @@ class Parser:
     into a domain file and a problem file
     """
 
-    SUPPORTED_REQUIREMENTS = [':strips', ':negative-preconditions', ':typing', ':adl', ':preferences', ':disjunctive-preconditions', ':equality', ':numeric-fluents']
-    SUPPORTED_SUPER_REQUIREMENTS = {':adl': [':strips', ':typing' , ':disjunctive-preconditions', ':equality', ':quantified-preconditions', ':condition-effects']}
+    SUPPORTED_REQUIREMENTS = [':strips', ':negative-preconditions', ':typing', ':adl',
+                              ':preferences', ':disjunctive-preconditions', ':equality',
+                              ':numeric-fluents']
+    SUPPORTED_SUPER_REQUIREMENTS = {':adl': [':strips', ':typing' , ':disjunctive-preconditions',
+                                    ':equality', ':quantified-preconditions', ':condition-effects']}
 
     def __init__(self, domain : str, problem : str) -> None:
         """Constructor of PDDL parser
@@ -55,12 +57,12 @@ class Parser:
             raise Exception('File ' + domain_filename + ' does not match domain pattern')
 
         for group in tokens:
-            t = group.pop(0)
-            
-            if t == 'domain':
+            token = group.pop(0)
+
+            if token == 'domain':
                 self.domain_name = group[0]
-            
-            elif t == ':requirements':
+
+            elif token == ':requirements':
                 group = set(group)
                 for req in group:
                     if req in self.SUPPORTED_SUPER_REQUIREMENTS:
@@ -70,23 +72,23 @@ class Parser:
                 group.difference_update(self.SUPPORTED_SUPER_REQUIREMENTS)
                 self.requirements.update(group)
             
-            elif t == ':constants':
+            elif token == ':constants':
                 parse_hierarchy(group, self.constants, 'constants', False)
             
-            elif t == ':functions':
+            elif token == ':functions':
                 parse_fluents(group, self.functions, 'functions')
             
-            elif t == ':predicates':
+            elif token == ':predicates':
                 parse_fluents(group, self.predicates, 'predicates')
             
-            elif t == ':types':
+            elif token == ':types':
                 parse_hierarchy(group, self.types, 'types', True)
             
-            elif t == ':action':
+            elif token == ':action':
                 self.parse_action(group)
             
             else:
-                print(str(t) + ' is not recognized in domain')
+                print(str(token) + ' is not recognized in domain')
 
 
     def parse_problem(self, problem_filename : str):
@@ -192,41 +194,6 @@ class Parser:
                 print(str(t) + ' is not recognized in action')
 
         self.actions.append(Action(name, parameters, preconditions, effects))
-
-    def parse_goal(self, group : list) -> Tuple[tuple, Dict[str, tuple]]:
-        """Parse goal representation
-
-        Args:
-            group (list): hierarchied list of tokens extracted from the PDDL problem instance file
-
-        Returns:
-            Tuple[tuple, Dict[str, dict]]: goal representation and preferences list
-        """
-        goal : tuple = ('and', [])
-        preferences : Dict[str, tuple] = {}
-        if not isinstance(group, list):
-            raise Exception('Error with goal')
-
-        if len(group) == 0:
-            return goal, preferences
-
-        elif group[0] == 'and':
-            if len(group) <= 1:
-                raise Exception('Unexpected and in goal')
-            predicates = []
-            for t in group[1:]:
-                if isinstance(t, list) and len(t) > 0 and t[0] == 'preference':
-                    if len(t) != 3:
-                        raise Exception('Unexpected preference in goal')
-                    preferences[t[1]] = split_predicates(t[2], '', 'preference')
-                else:
-                    predicates.append(split_predicates(t, '', 'goal'))
-            goal = tuple(['and', predicates])
-
-        else:
-            goal = split_predicates(group, '', 'goal')
-
-        return goal, preferences
 
     def parse_numeric_operation(self, group : list) -> tuple:
         """Parse numeric operation occuring in the goal

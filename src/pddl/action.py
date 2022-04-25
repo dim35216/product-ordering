@@ -6,7 +6,8 @@ class Action:
     and translating PDDL planning problems
     """
 
-    def __init__(self, name : str, parameters : List[List[str]], preconditions : tuple, effects : tuple):
+    def __init__(self, name : str, parameters : List[List[str]], preconditions : tuple,
+                 effects : tuple):
         """Constructor of a PDDL action, which is given in
         STRIPS-like notation with parameters, preconditions and
         effects
@@ -33,7 +34,7 @@ class Action:
         '\n  preconditions: ' + str(self.preconditions) + \
         '\n  effects: ' + str(self.effects) + '\n'
 
-    def reprASPTerm(self):
+    def repr_ASP_term(self):
         """Get representation of action as ASP term
 
         Returns:
@@ -48,12 +49,13 @@ class Action:
             term = term[:-2] + ')'
         return term
 
-    def reprParameters(self, sep : str = ',', leadingSep : bool = True) -> str:
+    def repr_parameters(self, sep : str = ',', leading_sep : bool = True) -> str:
         """Get list of parameters as string
 
         Args:
             sep (str, optional): separation char. Defaults to ','.
-            leadingSep (bool, optional): add an additional separation char at the beginning. Defaults to True.
+            leading_sep (bool, optional): add an additional separation char at the beginning.
+                                          Defaults to True.
 
         Returns:
             str: string listing all parameters, divided by the separation char
@@ -62,7 +64,7 @@ class Action:
         first = True
         for var, typ in self.parameters:
             assert var[0] == '?'
-            if not first or leadingSep:
+            if not first or leading_sep:
                 result += sep + ' '
             first = False
             result += f'{typ.lower()}({var[1:].capitalize()})'

@@ -1,5 +1,5 @@
 import time
-from typing import List, Union, Tuple
+from typing import List
 import logging
 import os
 import sys
@@ -131,9 +131,9 @@ class Translator:
             logging.debug(f'action.effects: {action.effects}')
             logging.debug(f'action.preconditions: {action.preconditions}')
 
-            Pi.append(f'action({action.reprASPTerm()})')
+            Pi.append(f'action({action.repr_ASP_term()})')
             if action.parameters:
-                Pi.append(f'\t:- {action.reprParameters(leadingSep=False)}')
+                Pi.append(f'\t:- {action.repr_parameters(leading_sep=False)}')
             Pi.append('.\n\n')
 
             for effect in action.effects[1]:
@@ -142,19 +142,19 @@ class Translator:
                     effect = effect[1]
                     strongNegation = True
                 if effect[0] in parser.predicates:
-                    Pi.append(f'{reprFluent(effect, timeTerm="T", strongNegation=strongNegation)}\t:- time(T), occ({action.reprASPTerm()}, T){action.reprParameters()}.\n')
+                    Pi.append(f'{reprFluent(effect, timeTerm="T", strongNegation=strongNegation)}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}.\n')
                 
                 elif effect[0] == '+':
-                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList= ["V"])}\t:- time(T), occ({action.reprASPTerm()}, T){action.reprParameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V1"])}')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList= ["V"])}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V1"])}')
                     if effect[2][0] in fluentsInEffects:
                         Pi.append(f', {reprFluent(effect[2], timeTerm="T", addList=["V2"])}, V = V1 + V2.\n')
                     else:
                         Pi.append(f', {reprFluent(effect[2], addList=["V2"])}, V = V1 + V2.\n')
-                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.reprASPTerm()}, T){action.reprParameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V"])}.\n')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V"])}.\n')
 
                 elif effect[0] == 'assign':
-                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"])}\t:- time(T), occ({action.reprASPTerm()}, T){action.reprParameters()}, V = {effect[2]}.\n')
-                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.reprASPTerm()}, T){action.reprParameters()}, {reprFluent(effect[1], timeTerm = "T - 1", addList=["V"])}.\n')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"])}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, V = {effect[2]}.\n')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm = "T - 1", addList=["V"])}.\n')
 
             if len(action.effects[1]) > 0:
                 Pi.append('\n')
@@ -162,7 +162,7 @@ class Translator:
             if len(action.preconditions) == 1:
                 action.preconditions = ('and', [action.preconditions])
 
-            Pi.append(f'possible({action.reprASPTerm()}, T)\t:- time(T)')
+            Pi.append(f'possible({action.repr_ASP_term()}, T)\t:- time(T)')
             for precondition in action.preconditions[1]:
                 Pi.append(', ')
                 defaultNegation = False
@@ -175,7 +175,7 @@ class Translator:
                     Pi.append(f'{reprFluent(precondition[1], timeTerm="T - 1", addList=["Value"])}, Value < {precondition[2]}')
                 else:
                     raise Exception('Using unimplemented feature')
-            Pi.append(f'{action.reprParameters()}.\n')
+            Pi.append(f'{action.repr_parameters()}.\n')
         
         Pi.append('\n% Action generation rule with Executability constraint\n')
         Pi.append('1 { occ(A, T) : possible(A, T), action(A) } 1 :- time(T).\n\n')

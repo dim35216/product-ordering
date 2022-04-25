@@ -1,9 +1,8 @@
-from ast import Str
 import re
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 
 def frozenset_of_tuples(data):
-    return frozenset([tuple(t) for t in data])
+    return frozenset([tuple(token) for token in data])
 
 def scan_tokens(filename : str) -> Union[str, list]:
     """Scan tokens for a PDDL domain or problem instance file
@@ -53,7 +52,7 @@ def parse_hierarchy(group : list, structure : Dict[str, List], name : str, redef
     while group:
         if redefine and group[0] in structure:
             raise Exception('Redefined supertype of ' + group[0])
-        elif group[0] == '-':
+        if group[0] == '-':
             if not objects:
                 raise Exception('Unexpected hyphen in ' + name)
             group.pop(0)
@@ -83,18 +82,53 @@ def parse_fluents(group : list, structure : Dict[str, dict], name : str) -> None
         arguments = {}
         untyped_variables : List[str] = []
         while pred:
-            t = pred.pop(0)
-            if t == '-':
+            token = pred.pop(0)
+            if token == '-':
                 if not untyped_variables:
                     raise Exception('Unexpected hyphen in ' + name)
-                type = pred.pop(0)
+                typ = pred.pop(0)
                 while untyped_variables:
-                    arguments[untyped_variables.pop(0)] = type
+                    arguments[untyped_variables.pop(0)] = typ
             else:
-                untyped_variables.append(t)
+                untyped_variables.append(token)
         while untyped_variables:
             arguments[untyped_variables.pop(0)] = 'object'
         structure[predicate_name] = arguments
+
+def parse_goal(group : list) -> Tuple[tuple, Dict[str, tuple]]:
+    """Parse goal representation
+
+    Args:
+        group (list): hierarchied list of tokens extracted from the PDDL problem instance file
+
+    Returns:
+        Tuple[tuple, Dict[str, dict]]: goal representation and preferences list
+    """
+    goal : tuple = ('and', [])
+    preferences : Dict[str, tuple] = {}
+    if not isinstance(group, list):
+        raise Exception('Error with goal')
+
+    elif len(group) == 0:
+        return goal, preferences
+
+    elif group[0] == 'and':
+        if len(group) <= 1:
+            raise Exception('Unexpected and in goal')
+        predicates = []
+        for token in group[1:]:
+            if isinstance(token, list) and len(token) > 0 and token[0] == 'preference':
+                if len(token) != 3:
+                    raise Exception('Unexpected preference in goal')
+                preferences[token[1]] = split_predicates(token[2], '', 'preference')
+            else:
+                predicates.append(split_predicates(token, '', 'goal'))
+        goal = tuple(['and', predicates])
+
+    else:
+        goal = split_predicates(group, '', 'goal')
+
+    return goal, preferences
 
 def split_predicates(group : list, name : str, part : str) -> tuple:
     """Split and parse list of PDDL predicates
