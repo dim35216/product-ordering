@@ -54,8 +54,7 @@ class Action:
 
         Args:
             sep (str, optional): separation char. Defaults to ','.
-            leading_sep (bool, optional): add an additional separation char at the beginning.
-                                          Defaults to True.
+            leading_sep (bool, optional): add an additional separation char at the beginning. Defaults to True.
 
         Returns:
             str: string listing all parameters, divided by the separation char
