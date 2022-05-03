@@ -31,13 +31,13 @@ def run_seq_encoding(products : Set[str], run : int) -> int:
     numCalls = len(products) * (len(products) - 1)
 
     minC = 10080
-    minOrder = []
+    min_order = []
     for p1 in products:
         for p2 in products:
             if p1 != p2:
                 try:
                     args = template_args + [f'-c s=p{p1}', f'-c e=p{p2}']
-                    process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT/numCalls)
+                    process = subprocess.run(args, capture_output=True, text=True, check=True, timeout=TIMEOUT/numCalls)
                 except subprocess.TimeoutExpired:
                     return -1, [], -1
 
@@ -47,13 +47,13 @@ def run_seq_encoding(products : Set[str], run : int) -> int:
                 C = calculateOCT(order)
                 if C < minC:
                     minC = C
-                    minOrder = order
+                    min_order = order
 
     try:
         args=['gringo', TSP_ENCODING, TPO_ENCODING, filename, '--text'] + [f'-c s=p{p1}', f'-c e=p{p2}']
-        lines = subprocess.run(args, capture_output=True).stdout.count(b'\n')
+        lines = subprocess.run(args, capture_output=True, check=True).stdout.count(b'\n')
         lines = lines * numCalls
     except subprocess.TimeoutExpired:
         lines = -1
 
-    return minC, minOrder, lines
+    return minC, min_order, lines

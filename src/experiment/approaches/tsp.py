@@ -1,8 +1,8 @@
-import pandas as pd
 import subprocess
 import re
 import os
 from typing import Set, List, Tuple
+import pandas as pd
 import sys
 sys.path.append(os.path.abspath('..'))
 from constants import CHANGEOVER_MATRIX, TSP_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
@@ -43,12 +43,12 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
     Returns:
         Tuple[int, List[str]]: objective value, optimal product order
     """
-    pattern_cycle = re.compile('cycle\(p(\d*),p(\d*)\)')
-    pattern_start = re.compile('cycle\(v,p(\d*)\)')
-    pattern_end = re.compile('cycle\(p(\d*),v\)')
-    pattern_opt = re.compile('Optimization: (\d*)')
+    pattern_cycle = re.compile(r'cycle\(p(\d*),p(\d*)\)')
+    pattern_start = re.compile(r'cycle\(v,p(\d*)\)')
+    pattern_end = re.compile(r'cycle\(p(\d*),v\)')
+    pattern_opt = re.compile(r'Optimization: (\d*)')
     
-    optValue = None
+    opt_value = None
     start = None
     end = None
     order_dict = {}
@@ -71,9 +71,9 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
             end = result_end.group(1)
 
         if result_opt:
-            optValue = result_opt.group(1)
+            opt_value = result_opt.group(1)
 
-    assert optValue is not None
+    assert opt_value is not None
     assert start is not None
     assert end is not None
     
@@ -84,7 +84,7 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
         current = order_dict[current]
     order.append(end)
 
-    return optValue, order
+    return opt_value, order
 
 def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
@@ -106,17 +106,17 @@ def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
 
     try:
         args=['clingo', TSP_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
-        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
+        process = subprocess.run(args, capture_output=True, text=True, check=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         return -1, [], -1
 
-    optValue, order = interpret_clingo(process.stdout)
+    opt_value, order = interpret_clingo(process.stdout)
     assert len(order) == len(products)
 
     try:
         args=['gringo', TSP_ENCODING, TPO_ENCODING, filename, '--text']
-        lines = subprocess.run(args, capture_output=True).stdout.count(b'\n')
+        lines = subprocess.run(args, capture_output=True, check=True).stdout.count(b'\n')
     except subprocess.TimeoutExpired:
         lines = -1
 
-    return optValue, order, lines
+    return opt_value, order, lines

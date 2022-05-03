@@ -25,17 +25,17 @@ def run_bad_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
 
     try:
         args = ['clingo', BAD_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
-        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
+        process = subprocess.run(args, capture_output=True, text=True, check=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         return -1, [], -1
 
-    optValue, order = interpret_clingo(process.stdout)
+    opt_value, order = interpret_clingo(process.stdout)
     assert len(order) == len(products)
 
     try:
         args=['gringo', BAD_ENCODING, TPO_ENCODING, filename, '--text']
-        lines = subprocess.run(args, capture_output=True, timeout=TIMEOUT).stdout.count(b'\n')
+        lines = subprocess.run(args, capture_output=True, check=True, timeout=TIMEOUT).stdout.count(b'\n')
     except subprocess.TimeoutExpired:
         lines = -1
 
-    return optValue, order, lines
+    return opt_value, order, lines

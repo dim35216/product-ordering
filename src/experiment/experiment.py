@@ -1,9 +1,9 @@
-import pandas as pd
 import time
 import os
 import random
 import logging
 from typing import Set
+import pandas as pd
 import sys
 sys.path.append(os.path.abspath('.'))
 from constants import CHANGEOVER_MATRIX, PROJECT_FOLDER, RESULTS_FILE
@@ -83,10 +83,10 @@ if __name__ == '__main__':
             if 'tsp' in encodings:
                 print('tsp encoding')
                 t = time.time()
-                optValue, order, ground_rules = run_tsp_encoding(products, run)
+                opt_value, order, ground_rules = run_tsp_encoding(products, run)
                 t = time.time() - t
                 df_results['Time'][(n, run, 'tsp')] = t
-                df_results['OptValue'][(n, run, 'tsp')] = optValue
+                df_results['OptValue'][(n, run, 'tsp')] = opt_value
                 df_results['C'][(n, run, 'tsp')] = calculateOCT(order)
                 df_results['GroundRules'][(n, run, 'tsp')] = ground_rules
                 print(t)
@@ -94,10 +94,10 @@ if __name__ == '__main__':
             if 'asp' in encodings:
                 print('asp encoding')
                 t = time.time()
-                optValue, order, ground_rules = run_asp(products, run)
+                opt_value, order, ground_rules = run_asp(products, run)
                 t = time.time() - t
                 df_results['Time'][(n, run, 'asp')] = t
-                df_results['OptValue'][(n, run, 'asp')] = optValue
+                df_results['OptValue'][(n, run, 'asp')] = opt_value
                 df_results['C'][(n, run, 'asp')] = calculateOCT(order)
                 df_results['GroundRules'][(n, run, 'asp')] = ground_rules
                 print(t)
@@ -105,30 +105,30 @@ if __name__ == '__main__':
             if 'seq' in encodings:
                 print('seq encoding')
                 t = time.time()
-                optValue, order, ground_rules = run_seq_encoding(products, run)
+                opt_value, order, ground_rules = run_seq_encoding(products, run)
                 t = time.time() - t
                 df_results['Time'][(n, run, 'seq')] = t
-                df_results['OptValue'][(n, run, 'seq')] = optValue
+                df_results['OptValue'][(n, run, 'seq')] = opt_value
                 df_results['GroundRules'][(n, run, 'seq')] = ground_rules
                 print(t)
 
             if 'bad' in encodings:
                 print('bad encoding')
                 t = time.time()
-                optValue, order, ground_rules = run_bad_encoding(products, run)
+                opt_value, order, ground_rules = run_bad_encoding(products, run)
                 t = time.time() - t
                 df_results['Time'][(n, run, 'bad')] = t
-                df_results['OptValue'][(n, run, 'bad')] = optValue
+                df_results['OptValue'][(n, run, 'bad')] = opt_value
                 df_results['GroundRules'][(n, run, 'bad')] = ground_rules
                 print(t)
 
             if 'ilp' in encodings:
                 print('ilp encoding')
                 t = time.time()
-                optValue, order, numVariables, numConstraints = run_ilp(products, run)
+                opt_value, order, numVariables, numConstraints = run_ilp(products, run)
                 t = time.time() - t
                 df_results['Time'][(n, run, 'ilp')] = t
-                df_results['OptValue'][(n, run, 'ilp')] = optValue
+                df_results['OptValue'][(n, run, 'ilp')] = opt_value
                 df_results['C'][(n, run, 'ilp')] = calculateOCT(order)
                 df_results['Variables'][(n, run, 'ilp')] = numVariables
                 df_results['Constraints'][(n, run, 'ilp')] = numConstraints

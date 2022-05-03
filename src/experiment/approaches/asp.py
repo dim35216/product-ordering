@@ -1,9 +1,9 @@
-import pandas as pd
 import subprocess
 import re
 import os
 import logging
 from typing import Set, List, Tuple
+import pandas as pd
 import sys
 sys.path.append(os.path.abspath('..'))
 from constants import CHANGEOVER_MATRIX, DOMAIN_PDDL, PROJECT_FOLDER, TIMEOUT
@@ -18,7 +18,7 @@ def create_instance(products : Set[str], filename : str) -> None:
         products (Set[str]): set of products
         filename (str): name of resulting PDDL instance file
     """
-    df = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
 
     result = \
 f'''(define (problem ProductOrdering-{filename})
@@ -47,7 +47,7 @@ f'''(define (problem ProductOrdering-{filename})
         result += f'    (available p{product})\n'
     for product1 in products:
         for product2 in products:
-            value = df[product2][int(product1)]
+            value = df_matrix[product2][int(product1)]
             result += f'    (= (changeover-time p{product1} p{product2}) {value})\n'
     result += \
 ''')
@@ -57,7 +57,7 @@ f'''(define (problem ProductOrdering-{filename})
 )
 '''
 
-    with open(filename, 'w') as f:
+    with open(filename, 'w', encoding='utf-8') as f:
         f.write(result)
     return
 
@@ -72,12 +72,12 @@ def interpret_clingo(cmd_output : str, timesteps : int) -> Tuple[int, List[str]]
     Returns:
         Tuple[int, List[str]]: minimal overall changeover time, optimal product order
     """
-    pattern_initialize = re.compile('occ\(initialize\(p(\d*)\),(\d*)\)')
-    pattern_switch = re.compile('occ\(switch\(p(\d*),p(\d*)\),(\d*)\)')
-    pattern_finalize = re.compile('occ\(finalize\(p(\d*)\),(\d*)\)')
-    pattern_opt = re.compile('Optimization: (\d*)')
+    pattern_initialize = re.compile(r'occ\(initialize\(p(\d*)\),(\d*)\)')
+    pattern_switch = re.compile(r'occ\(switch\(p(\d*),p(\d*)\),(\d*)\)')
+    pattern_finalize = re.compile(r'occ\(finalize\(p(\d*)\),(\d*)\)')
+    pattern_opt = re.compile(r'Optimization: (\d*)')
     
-    optValue = None
+    opt_value = None
     p_start = None
     p_end = None
     order = [None] * (timesteps - 1)
@@ -105,14 +105,14 @@ def interpret_clingo(cmd_output : str, timesteps : int) -> Tuple[int, List[str]]
             assert t == timesteps
 
         if result_opt:
-            optValue = result_opt.group(1)
+            opt_value = result_opt.group(1)
 
-    assert optValue is not None
+    assert opt_value is not None
     assert None not in order
     assert p_start == order[0]
     assert p_end == order[-1]
 
-    return optValue, order
+    return opt_value, order
 
 def run_asp(products : Set[str], run : int) -> Tuple[int, List[int], int]:
     """Computing the Product Ordering problem as a logic program using the Answer Set Planning
@@ -136,7 +136,7 @@ def run_asp(products : Set[str], run : int) -> Tuple[int, List[int], int]:
 
     timesteps = len(products) + 1
 
-    logging.debug(f'pddl_filename: {pddl_filename}')
+    logging.debug('pddl_filename: %s', pddl_filename)
     translator = Translator()
     Pi = translator.translate(domain=DOMAIN_PDDL, problem=pddl_filename, timesteps=timesteps)
     assert Pi is not None
@@ -145,17 +145,17 @@ def run_asp(products : Set[str], run : int) -> Tuple[int, List[int], int]:
 
     try:
         args = ['clingo', lp_filename, '--quiet=1,0', '--out-ifs=\n']
-        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
+        process = subprocess.run(args, capture_output=True, text=True, check=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         return -1, [], -1
     
-    optValue, order = interpret_clingo(process.stdout, timesteps)
+    opt_value, order = interpret_clingo(process.stdout, timesteps)
     assert len(order) == len(products)
 
     try:
         args=['gringo', lp_filename, '--text']
-        lines = subprocess.run(args, capture_output=True).stdout.count(b'\n')
+        lines = subprocess.run(args, capture_output=True, check=True).stdout.count(b'\n')
     except subprocess.TimeoutExpired:
         lines = -1
 
-    return optValue, order, lines
+    return opt_value, order, lines

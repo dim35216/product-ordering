@@ -1,9 +1,9 @@
-import pandas as pd
 import os
 import logging
 from ortools.linear_solver import pywraplp
 from itertools import chain, combinations, permutations
 from typing import Set, List, Dict, Tuple
+import pandas as pd
 import sys
 sys.path.append(os.path.abspath('..'))
 from constants import CHANGEOVER_MATRIX, TIMEOUT
@@ -127,8 +127,8 @@ def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
     Returns:
         Tuple[int, List[str], int, int]: minimal overall changeover time, optimal product order, number of variables, number of constraints
     """
-    minOptValue : int = 10080
-    minOrder : List[str] = []
+    min_opt_value : int = 10080
+    min_order : List[str] = []
     numVariables : int = 0
     numConstraints : int = 0
     for p1 in products:
@@ -141,18 +141,18 @@ def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
 
                 logging.debug(f'Solution for start {p1} and end {p2} with status {status}')
                 if status == pywraplp.Solver.OPTIMAL:
-                    optValue = solver.Objective().Value()
-                    logging.debug('Objective value = ' + str(optValue))
+                    opt_value = solver.Objective().Value()
+                    logging.debug('Objective value = ' + str(opt_value))
 
                     numVariables += solver.NumVariables()
                     numConstraints += solver.NumConstraints()
 
-                    if optValue < minOptValue:
-                        minOptValue = optValue
-                        minOrder = extract_order(x, start=p1, end=p2)
-                        logging.debug('MinOrder: ' + str(minOrder))
+                    if opt_value < min_opt_value:
+                        min_opt_value = opt_value
+                        min_order = extract_order(x, start=p1, end=p2)
+                        logging.debug('MinOrder: ' + str(min_order))
                 else:
                     logging.error('The problem does not have an optimal solution.')
                     return -1, [], -1, -1
 
-    return minOptValue, minOrder, numVariables, numConstraints
+    return min_opt_value, min_order, numVariables, numConstraints
