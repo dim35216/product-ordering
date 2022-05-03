@@ -41,7 +41,7 @@ jobs:
         pylint --fail-under=7 $(git ls-files 'src/*.py')
     - name: Static code checking with mypy
       run: |
-        mypy src/ --ignore-missing-imports --explicit-package-bases
+        mypy src/ --ignore-missing-imports
     - name: Test with unittest
       run: |
         python -m unittest discover -s test/pddl/ -p "test_*.py"
