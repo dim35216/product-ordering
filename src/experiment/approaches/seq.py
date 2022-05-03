@@ -1,13 +1,13 @@
 import subprocess
 import os
-from typing import Set
+from typing import Set, Tuple, List
 import sys
 sys.path.append(os.path.abspath('..'))
 from constants import TSP_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
 from utils import calculate_oct
 from approaches.tsp import create_instance, interpret_clingo
 
-def run_seq_encoding(products : Set[str], run : int) -> int:
+def run_seq_encoding(products : Set[str], run : int) -> Tuple[int, List[int], int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding,
     but the start and end product is specified explicitly; as a consequence, the solver runs O(n^2)
     times; in each run, the Product Ordering problem instance has to transformed into a TSP

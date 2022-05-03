@@ -77,10 +77,10 @@ def interpret_clingo(cmd_output : str, timesteps : int) -> Tuple[int, List[str]]
     pattern_finalize = re.compile(r'occ\(finalize\(p(\d*)\),(\d*)\)')
     pattern_opt = re.compile(r'Optimization: (\d*)')
     
-    opt_value = None
+    opt_value = -1
     p_start = None
     p_end = None
-    order = [None] * (timesteps - 1)
+    order = [''] * (timesteps - 1)
     for line in cmd_output.split('\n'):
         result_initialize = pattern_initialize.match(line)
         result_switch = pattern_switch.match(line)
@@ -105,16 +105,16 @@ def interpret_clingo(cmd_output : str, timesteps : int) -> Tuple[int, List[str]]
             assert time == timesteps
 
         if result_opt:
-            opt_value = result_opt.group(1)
+            opt_value = int(result_opt.group(1))
 
-    assert opt_value is not None
-    assert None not in order
+    assert opt_value != -1
+    assert '' not in order
     assert p_start == order[0]
     assert p_end == order[-1]
 
     return opt_value, order
 
-def run_asp(products : Set[str], run : int) -> Tuple[int, List[int], int]:
+def run_asp(products : Set[str], run : int) -> Tuple[int, List[str], int]:
     """Computing the Product Ordering problem as a logic program using the Answer Set Planning
     approach; first, the problem is understood as a classical planning problem with preferences
     and this is encoded in the planning problem description language PDDL; the PDDL instance is

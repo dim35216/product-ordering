@@ -48,7 +48,7 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
     pattern_end = re.compile(r'cycle\(p(\d*),v\)')
     pattern_opt = re.compile(r'Optimization: (\d*)')
     
-    opt_value = None
+    opt_value = -1
     start = None
     end = None
     order_dict = {}
@@ -71,9 +71,9 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
             end = result_end.group(1)
 
         if result_opt:
-            opt_value = result_opt.group(1)
+            opt_value = int(result_opt.group(1))
 
-    assert opt_value is not None
+    assert opt_value != -1
     assert start is not None
     assert end is not None
     

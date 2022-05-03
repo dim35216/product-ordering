@@ -22,7 +22,7 @@ def create_model(products : Set[str], start : str, end : str) -> Tuple[pywraplp.
     """
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
 
-    cost = {}
+    cost : Dict[str, Dict[str, float]] = {}
     for product1 in products:
         cost[product1] = {}
         for product2 in products:
@@ -32,13 +32,13 @@ def create_model(products : Set[str], start : str, end : str) -> Tuple[pywraplp.
 
     solver = pywraplp.Solver.CreateSolver('SCIP')
 
-    delta_plus = {}
-    delta_minus = {}
+    delta_plus : Dict[str, List[pywraplp.Variable]] = {}
+    delta_minus : Dict[str, List[pywraplp.Variable]] = {}
     for product in products:
         delta_plus[product] = []
         delta_minus[product] = []
     
-    x = {}
+    x : Dict[str, Dict[str, pywraplp.Variable]] = {}
     for p1 in products:
         x[p1] = {}
         for p2 in products:
