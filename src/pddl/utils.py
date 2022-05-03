@@ -109,7 +109,7 @@ def parse_goal(group : list) -> Tuple[tuple, Dict[str, tuple]]:
     if not isinstance(group, list):
         raise Exception('Error with goal')
 
-    elif len(group) == 0:
+    if len(group) == 0:
         return goal, preferences
 
     elif group[0] == 'and':
