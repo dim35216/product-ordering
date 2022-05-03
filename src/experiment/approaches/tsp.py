@@ -14,7 +14,7 @@ def create_instance(products : Set[str], filename : str) -> None:
         products (Set[str]): set of products
         filename (str): file to resulting LP instance file
     """
-    df = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
 
     result = ''
     for product in products:
@@ -26,7 +26,7 @@ def create_instance(products : Set[str], filename : str) -> None:
     for product1 in products:
         for product2 in products:
             if product1 != product2:
-                value = df[product2][int(product1)]
+                value = df_matrix[product2][int(product1)]
                 result += f'cost(p{product1}, p{product2}, {value}).\n'
 
     with open(filename, 'w') as f:
@@ -98,7 +98,8 @@ def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
     Returns:
         Tuple[int, List[str], int]: objective value, optimal product order, number of ground rules
     """
-    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'tsp', f'instance_{len(products)}_{run}.lp')
+    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'tsp',
+        f'instance_{len(products)}_{run}.lp')
     create_instance(products, filename)
     assert os.path.exists(filename)
     assert os.path.exists(TSP_ENCODING)

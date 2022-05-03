@@ -12,7 +12,7 @@ from approaches.asp import run_asp
 from approaches.seq import run_seq_encoding
 from approaches.bad import run_bad_encoding
 from approaches.ilp import run_ilp
-from utils import calculateOCT
+from utils import calculate_oct
 
 def select_random_set_of_product(n : int, run : int) -> Set[str]:
     """Auxiliary function for selecting a random set of n products out of all products in the
@@ -26,8 +26,8 @@ def select_random_set_of_product(n : int, run : int) -> Set[str]:
     Returns:
         Set[str]: set of products
     """
-    df = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-    products = df.columns.to_list()
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    products = df_matrix.columns.to_list()
     random.seed(42)
     seed = random.randint(run * 100 + 1, (run + 1) * 100)
     random.seed(seed)
@@ -70,8 +70,10 @@ if __name__ == '__main__':
 
     numProducts = list(range(10, 40, 4)) # [4, 8, 12, 16, 20, 24]
     runs = list(range(3))
-    index = pd.MultiIndex.from_product([numProducts, runs, encodings], names=['NumProducts', 'Run', 'Encoding'])
-    df_results = pd.DataFrame([], index=index, columns=['Time', 'OptValue', 'C', 'GroundRules', 'Variables', 'Constraints'])
+    index = pd.MultiIndex.from_product([numProducts, runs, encodings],
+        names=['NumProducts', 'Run', 'Encoding'])
+    df_results = pd.DataFrame([], index=index,
+        columns=['Time', 'OptValue', 'C', 'GroundRules', 'Variables', 'Constraints'])
 
     for n in numProducts:
         print('n:', n)
@@ -87,7 +89,7 @@ if __name__ == '__main__':
                 t = time.time() - t
                 df_results['Time'][(n, run, 'tsp')] = t
                 df_results['OptValue'][(n, run, 'tsp')] = opt_value
-                df_results['C'][(n, run, 'tsp')] = calculateOCT(order)
+                df_results['C'][(n, run, 'tsp')] = calculate_oct(order)
                 df_results['GroundRules'][(n, run, 'tsp')] = ground_rules
                 print(t)
 
@@ -98,7 +100,7 @@ if __name__ == '__main__':
                 t = time.time() - t
                 df_results['Time'][(n, run, 'asp')] = t
                 df_results['OptValue'][(n, run, 'asp')] = opt_value
-                df_results['C'][(n, run, 'asp')] = calculateOCT(order)
+                df_results['C'][(n, run, 'asp')] = calculate_oct(order)
                 df_results['GroundRules'][(n, run, 'asp')] = ground_rules
                 print(t)
 
@@ -129,7 +131,7 @@ if __name__ == '__main__':
                 t = time.time() - t
                 df_results['Time'][(n, run, 'ilp')] = t
                 df_results['OptValue'][(n, run, 'ilp')] = opt_value
-                df_results['C'][(n, run, 'ilp')] = calculateOCT(order)
+                df_results['C'][(n, run, 'ilp')] = calculate_oct(order)
                 df_results['Variables'][(n, run, 'ilp')] = numVariables
                 df_results['Constraints'][(n, run, 'ilp')] = numConstraints
                 print(t)

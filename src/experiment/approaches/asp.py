@@ -128,7 +128,8 @@ def run_asp(products : Set[str], run : int) -> Tuple[int, List[int], int]:
     Returns:
         Tuple[int, List[int], int]: minimal overall changeover time, optimal product order, number of ground rules
     """
-    pddl_filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'asp', f'instance_{len(products)}_{run}.pddl')
+    pddl_filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'asp',
+        f'instance_{len(products)}_{run}.pddl')
     lp_filename = f'{pddl_filename}.lp'
     create_instance(products, pddl_filename)
     assert os.path.exists(pddl_filename)

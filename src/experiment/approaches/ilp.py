@@ -1,14 +1,15 @@
 import os
 import logging
-from ortools.linear_solver import pywraplp
-from itertools import chain, combinations, permutations
 from typing import Set, List, Dict, Tuple
 import pandas as pd
+from ortools.linear_solver import pywraplp
+from itertools import chain, combinations, permutations
 import sys
 sys.path.append(os.path.abspath('..'))
 from constants import CHANGEOVER_MATRIX, TIMEOUT
 
-def create_model(products : Set[str], start : str, end : str) -> Tuple[pywraplp.Solver, Dict[str, Dict[str, pywraplp.Variable]]]:
+def create_model(products : Set[str], start : str, end : str) -> Tuple[pywraplp.Solver,
+                                                        Dict[str, Dict[str, pywraplp.Variable]]]:
     """Creating an ILP model of the Product Ordering problem for a Google OR-Tools LP solver
 
     Args:
@@ -19,14 +20,14 @@ def create_model(products : Set[str], start : str, end : str) -> Tuple[pywraplp.
     Returns:
         Tuple[pywraplp.Solver, Dict[str, Dict[str, pywraplp.Variable]]]: Google OR-Tools LP solver and dictionary of all variables
     """
-    df = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
 
     cost = {}
     for product1 in products:
         cost[product1] = {}
         for product2 in products:
             if product1 != product2:
-                value = float(df[product2][int(product1)])
+                value = float(df_matrix[product2][int(product1)])
                 cost[product1][product2] = value
 
     solver = pywraplp.Solver.CreateSolver('SCIP')
@@ -89,7 +90,7 @@ def _print_variables(x : Dict[str, Dict[str, pywraplp.Variable]]) -> None:
     """
     for p1, values in x.items():
         for p2, var in values.items():
-            logging.debug(f'x[{p1}][{p2}] = {var.SolutionValue()}')
+            logging.debug('x[%s][%s] = %s', p1, p2, var.SolutionValue())
 
 def extract_order(x : Dict[str, Dict[str, pywraplp.Variable]], start : str, end : str) -> List[str]:
     """Analyzing the solution values of the ILP model's variables for extracting the order of products
@@ -102,8 +103,8 @@ def extract_order(x : Dict[str, Dict[str, pywraplp.Variable]], start : str, end 
     Returns:
         List[str]: extracted order of products
     """
-    logging.debug(f'start = {start}')
-    logging.debug(f'end = {end}')
+    logging.debug('start = %s', start)
+    logging.debug('end = %s', end)
     _print_variables(x)
     
     order = [start]
@@ -139,7 +140,7 @@ def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
 
                 status = solver.Solve()
 
-                logging.debug(f'Solution for start {p1} and end {p2} with status {status}')
+                logging.debug('Solution for start %s and end %s with status %s', p1, p2, status)
                 if status == pywraplp.Solver.OPTIMAL:
                     opt_value = solver.Objective().Value()
                     logging.debug('Objective value = ' + str(opt_value))

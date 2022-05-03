@@ -62,10 +62,10 @@ class Translator:
         parser = Parser(domain, problem)
 
         # Parsed data
-        logging.debug(f'predicates: {parser.predicates}')
-        logging.debug(f'goal: {parser.goal}')
-        logging.debug(f'actions: {parser.actions}')
-        logging.debug(f'predicates: {parser.predicates}')
+        logging.debug('predicates: %s', str(parser.predicates))
+        logging.debug('goal: %s', str(parser.goal))
+        logging.debug('actions: %s', str(parser.actions))
+        logging.debug('predicates: %s', str(parser.predicates))
 
         Pi = []
         
@@ -127,11 +127,11 @@ class Translator:
         for action in parser.actions:
             Pi.append(f'\n% ---- action: {action.name} ----\n')
             
-            logging.debug(f'action.parameters: {action.parameters}')
-            logging.debug(f'action.effects: {action.effects}')
-            logging.debug(f'action.preconditions: {action.preconditions}')
+            logging.debug('action.parameters: %s', str(action.parameters))
+            logging.debug('action.effects: %s', str(action.effects))
+            logging.debug('action.preconditions: %s', str(action.preconditions))
 
-            Pi.append(f'action({action.repr_ASP_term()})')
+            Pi.append(f'action({action.repr_asp_term()})')
             if action.parameters:
                 Pi.append(f'\t:- {action.repr_parameters(leading_sep=False)}')
             Pi.append('.\n\n')
@@ -142,19 +142,19 @@ class Translator:
                     effect = effect[1]
                     strongNegation = True
                 if effect[0] in parser.predicates:
-                    Pi.append(f'{reprFluent(effect, timeTerm="T", strongNegation=strongNegation)}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}.\n')
+                    Pi.append(f'{reprFluent(effect, timeTerm="T", strongNegation=strongNegation)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}.\n')
                 
                 elif effect[0] == '+':
-                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList= ["V"])}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V1"])}')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList= ["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V1"])}')
                     if effect[2][0] in fluentsInEffects:
                         Pi.append(f', {reprFluent(effect[2], timeTerm="T", addList=["V2"])}, V = V1 + V2.\n')
                     else:
                         Pi.append(f', {reprFluent(effect[2], addList=["V2"])}, V = V1 + V2.\n')
-                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V"])}.\n')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V"])}.\n')
 
                 elif effect[0] == 'assign':
-                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"])}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, V = {effect[2]}.\n')
-                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_ASP_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm = "T - 1", addList=["V"])}.\n')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, V = {effect[2]}.\n')
+                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm = "T - 1", addList=["V"])}.\n')
 
             if len(action.effects[1]) > 0:
                 Pi.append('\n')
@@ -162,7 +162,7 @@ class Translator:
             if len(action.preconditions) == 1:
                 action.preconditions = ('and', [action.preconditions])
 
-            Pi.append(f'possible({action.repr_ASP_term()}, T)\t:- time(T)')
+            Pi.append(f'possible({action.repr_asp_term()}, T)\t:- time(T)')
             for precondition in action.preconditions[1]:
                 Pi.append(', ')
                 defaultNegation = False
@@ -301,7 +301,8 @@ class Translator:
 #-----------------------------------------------
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print('Please give the following command line arguments: python [./]translator.py <domain_file> <problem_file> <timesteps>')
+        print('Please give the following command line arguments: ' + \
+            'python [./]translator.py <domain_file> <problem_file> <timesteps>')
         sys.exit(1)
     domain = sys.argv[1]
     problem = sys.argv[2]
@@ -316,7 +317,7 @@ if __name__ == '__main__':
         filename = f'{problem}.lp'
         with open(filename, 'w') as f:
             f.write(Pi)
-            logging.info(f'Logic program written into file {problem}.lp')
+            logging.info('Logic program written into file %s.lp', problem)
     else:
         logging.error('Translation was not possible')
         exit(1)

@@ -18,7 +18,8 @@ def run_bad_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
     Returns:
         Tuple[int, List[str], int]: minimal overall changeover time, optimal product order, number of ground rules
     """
-    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'bad', f'instance_{len(products)}_{run}.lp')
+    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'bad',
+        f'instance_{len(products)}_{run}.lp')
     create_instance(products, filename)
     assert os.path.exists(filename)
     assert os.path.exists(BAD_ENCODING)
@@ -34,7 +35,8 @@ def run_bad_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
 
     try:
         args=['gringo', BAD_ENCODING, TPO_ENCODING, filename, '--text']
-        lines = subprocess.run(args, capture_output=True, check=True, timeout=TIMEOUT).stdout.count(b'\n')
+        lines = subprocess.run(args, capture_output=True, check=True,
+            timeout=TIMEOUT).stdout.count(b'\n')
     except subprocess.TimeoutExpired:
         lines = -1
 

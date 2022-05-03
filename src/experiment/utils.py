@@ -5,7 +5,7 @@ import sys
 sys.path.append(os.path.abspath('.'))
 from constants import CHANGEOVER_MATRIX
 
-def calculateOCT(order: List[str]) -> int:
+def calculate_oct(order: List[str]) -> int:
     """Calculate the overall changeover time for a given product order and the changeover matrix
 
     Args:
@@ -14,10 +14,10 @@ def calculateOCT(order: List[str]) -> int:
     Returns:
         int: overall changeover time
     """
-    df = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
     C = 0
     for i in range(1, len(order)):
         p1 = order[i - 1]
         p2 = order[i]
-        C += df.at[int(p1), p2]
+        C += df_matrix.at[int(p1), p2]
     return C
