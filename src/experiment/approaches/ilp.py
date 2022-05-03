@@ -93,7 +93,8 @@ def _print_variables(x : Dict[str, Dict[str, pywraplp.Variable]]) -> None:
             logging.debug('x[%s][%s] = %s', p1, p2, var.SolutionValue())
 
 def extract_order(x : Dict[str, Dict[str, pywraplp.Variable]], start : str, end : str) -> List[str]:
-    """Analyzing the solution values of the ILP model's variables for extracting the order of products
+    """Analyzing the solution values of the ILP model's variables for extracting the order of
+    products
 
     Args:
         x (Dict[str, Dict[str, pywraplp.Variable]]): dictionary of all variables
@@ -143,7 +144,7 @@ def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
                 logging.debug('Solution for start %s and end %s with status %s', p1, p2, status)
                 if status == pywraplp.Solver.OPTIMAL:
                     opt_value = solver.Objective().Value()
-                    logging.debug('Objective value = ' + str(opt_value))
+                    logging.debug('Objective value = %s', str(opt_value))
 
                     numVariables += solver.NumVariables()
                     numConstraints += solver.NumConstraints()
@@ -151,7 +152,7 @@ def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
                     if opt_value < min_opt_value:
                         min_opt_value = opt_value
                         min_order = extract_order(x, start=p1, end=p2)
-                        logging.debug('MinOrder: ' + str(min_order))
+                        logging.debug('MinOrder: %s', str(min_order))
                 else:
                     logging.error('The problem does not have an optimal solution.')
                     return -1, [], -1, -1

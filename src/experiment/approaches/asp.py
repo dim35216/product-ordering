@@ -89,20 +89,20 @@ def interpret_clingo(cmd_output : str, timesteps : int) -> Tuple[int, List[str]]
         
         if result_initialize:
             p_start = result_initialize.group(1)
-            t = int(result_initialize.group(2))
-            assert t == 1
+            time = int(result_initialize.group(2))
+            assert time == 1
         
         if result_switch:
             p1 = result_switch.group(1)
             p2 = result_switch.group(2)
-            t = int(result_switch.group(3))
-            order[t - 2] = p1
-            order[t - 1] = p2
+            time = int(result_switch.group(3))
+            order[time - 2] = p1
+            order[time - 1] = p2
 
         if result_finalize:
             p_end = result_finalize.group(1)
-            t = int(result_finalize.group(2))
-            assert t == timesteps
+            time = int(result_finalize.group(2))
+            assert time == timesteps
 
         if result_opt:
             opt_value = result_opt.group(1)
@@ -139,10 +139,10 @@ def run_asp(products : Set[str], run : int) -> Tuple[int, List[int], int]:
 
     logging.debug('pddl_filename: %s', pddl_filename)
     translator = Translator()
-    Pi = translator.translate(domain=DOMAIN_PDDL, problem=pddl_filename, timesteps=timesteps)
-    assert Pi is not None
+    pi = translator.translate(domain=DOMAIN_PDDL, problem=pddl_filename, timesteps=timesteps)
+    assert pi is not None
     with open(lp_filename, 'w') as f:
-        f.write(Pi)
+        f.write(pi)
 
     try:
         args = ['clingo', lp_filename, '--quiet=1,0', '--out-ifs=\n']

@@ -67,29 +67,29 @@ class Translator:
         logging.debug('actions: %s', str(parser.actions))
         logging.debug('predicates: %s', str(parser.predicates))
 
-        Pi = []
+        pi = []
         
-        Pi.append('% Definitions\n')
-        Pi.append(f'#const timesteps={timesteps}.\n')
-        Pi.append('time(1..timesteps).\n\n')
+        pi.append('% Definitions\n')
+        pi.append(f'#const timesteps={timesteps}.\n')
+        pi.append('time(1..timesteps).\n\n')
 
-        Pi.append('%% Constants\n')
+        pi.append('%% Constants\n')
         for typ, values in parser.constants.items():
             if len(values) > 0:
-                Pi.append(f'{self._constructTerm(typ, values, sep=";")}.\n')
+                pi.append(f'{self._constructTerm(typ, values, sep=";")}.\n')
         if len(parser.constants.items()) == 0:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
 
-        Pi.append('%% Objects\n')
+        pi.append('%% Objects\n')
         for typ, values in parser.objects.items():
             if len(values) > 0:
-                Pi.append(f'{self._constructTerm(typ, values, sep=";")}.\n')
+                pi.append(f'{self._constructTerm(typ, values, sep=";")}.\n')
         if len(parser.objects.items()) == 0:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
         
         for type, subtypes in parser.types.items():
             for subtype in subtypes:
-                Pi.append(f'{type}(X)\t:- {subtype}(X).\n')
+                pi.append(f'{type}(X)\t:- {subtype}(X).\n')
 
         fluentsInEffects = set()
         fluentsWithNegatedEffects = set()
@@ -125,16 +125,16 @@ class Translator:
             return result
 
         for action in parser.actions:
-            Pi.append(f'\n% ---- action: {action.name} ----\n')
+            pi.append(f'\n% ---- action: {action.name} ----\n')
             
             logging.debug('action.parameters: %s', str(action.parameters))
             logging.debug('action.effects: %s', str(action.effects))
             logging.debug('action.preconditions: %s', str(action.preconditions))
 
-            Pi.append(f'action({action.repr_asp_term()})')
+            pi.append(f'action({action.repr_asp_term()})')
             if action.parameters:
-                Pi.append(f'\t:- {action.repr_parameters(leading_sep=False)}')
-            Pi.append('.\n\n')
+                pi.append(f'\t:- {action.repr_parameters(leading_sep=False)}')
+            pi.append('.\n\n')
 
             for effect in action.effects[1]:
                 strongNegation = False
@@ -142,76 +142,77 @@ class Translator:
                     effect = effect[1]
                     strongNegation = True
                 if effect[0] in parser.predicates:
-                    Pi.append(f'{reprFluent(effect, timeTerm="T", strongNegation=strongNegation)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}.\n')
+                    pi.append(f'{reprFluent(effect, timeTerm="T", strongNegation=strongNegation)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}.\n')
                 
                 elif effect[0] == '+':
-                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList= ["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V1"])}')
+                    pi.append(f'{reprFluent(effect[1], timeTerm="T", addList= ["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V1"])}')
                     if effect[2][0] in fluentsInEffects:
-                        Pi.append(f', {reprFluent(effect[2], timeTerm="T", addList=["V2"])}, V = V1 + V2.\n')
+                        pi.append(f', {reprFluent(effect[2], timeTerm="T", addList=["V2"])}, V = V1 + V2.\n')
                     else:
-                        Pi.append(f', {reprFluent(effect[2], addList=["V2"])}, V = V1 + V2.\n')
-                    Pi.append(f'{reprFluent(effect[1], timeTerm="T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V"])}.\n')
+                        pi.append(f', {reprFluent(effect[2], addList=["V2"])}, V = V1 + V2.\n')
+                    pi.append(f'{reprFluent(effect[1], timeTerm="T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm="T - 1", addList=["V"])}.\n')
 
                 elif effect[0] == 'assign':
-                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, V = {effect[2]}.\n')
-                    Pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm = "T - 1", addList=["V"])}.\n')
+                    pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, V = {effect[2]}.\n')
+                    pi.append(f'{reprFluent(effect[1], timeTerm = "T", addList=["V"], strongNegation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {reprFluent(effect[1], timeTerm = "T - 1", addList=["V"])}.\n')
 
             if len(action.effects[1]) > 0:
-                Pi.append('\n')
+                pi.append('\n')
             
             if len(action.preconditions) == 1:
                 action.preconditions = ('and', [action.preconditions])
 
-            Pi.append(f'possible({action.repr_asp_term()}, T)\t:- time(T)')
+            pi.append(f'possible({action.repr_asp_term()}, T)\t:- time(T)')
             for precondition in action.preconditions[1]:
-                Pi.append(', ')
+                pi.append(', ')
                 defaultNegation = False
                 if precondition[0] == 'not':
                     precondition = precondition[1]
                     defaultNegation = True
                 if precondition[0] in parser.predicates:
-                    Pi.append(reprFluent(precondition, timeTerm="T - 1", defaultNegation=defaultNegation))
+                    pi.append(reprFluent(precondition, timeTerm="T - 1", defaultNegation=defaultNegation))
                 elif precondition[0] == '<':
-                    Pi.append(f'{reprFluent(precondition[1], timeTerm="T - 1", addList=["Value"])}, Value < {precondition[2]}')
+                    pi.append(f'{reprFluent(precondition[1], timeTerm="T - 1", addList=["Value"])}, Value < {precondition[2]}')
                 else:
                     raise Exception('Using unimplemented feature')
-            Pi.append(f'{action.repr_parameters()}.\n')
+            pi.append(f'{action.repr_parameters()}.\n')
         
-        Pi.append('\n% Action generation rule with Executability constraint\n')
-        Pi.append('1 { occ(A, T) : possible(A, T), action(A) } 1 :- time(T).\n\n')
+        pi.append('\n% Action generation rule with Executability constraint\n')
+        pi.append('1 { occ(A, T) : possible(A, T), action(A) } 1 :- time(T).\n\n')
 
-        Pi.append('% Inertia rules\n')
-        Pi.append('%% Fluents (Predicates)\n')
+        pi.append('% Inertia rules\n')
+        pi.append('%% Fluents (Predicates)\n')
         for predicateName, predicateParams in parser.predicates.items():
             if predicateName in fluentsInEffects:
-                Pi.append(self._constructTerm(predicateName, list(predicateParams.keys()) + ['T']))
-                Pi.append('\t:- time(T), ')
-                Pi.append(self._constructTerm(predicateName, list(predicateParams.keys()) + ['T - 1']))
+                pi.append(self._constructTerm(predicateName, list(predicateParams.keys()) + ['T']))
+                pi.append('\t:- time(T), ')
+                pi.append(self._constructTerm(predicateName, list(predicateParams.keys()) + ['T - 1']))
                 if predicateName in fluentsWithNegatedEffects:
-                    Pi.append(f', not {self._constructTerm(predicateName, list(predicateParams.keys()) + ["T"], strongNegation=True)}')
-                Pi.append('.\n')
+                    pi.append(f', not {self._constructTerm(predicateName, list(predicateParams.keys()) + ["T"], strongNegation=True)}')
+                pi.append('.\n')
         if sum([predicateName in fluentsInEffects for predicateName in parser.predicates.keys()]) == 0:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
         
-        Pi.append('%% Numeric Fluents (Functions)\n')
+        pi.append('%% Numeric Fluents (Functions)\n')
         for functionName, functionParams in parser.functions.items():
             if functionName in fluentsInEffects:
-                Pi.append(self._constructTerm(functionName, list(functionParams.keys()) + ['V', 'T']))
-                Pi.append('\t:- time(T), ')
-                Pi.append(self._constructTerm(functionName, list(functionParams.keys()) + ['V', 'T - 1']))
+                pi.append(self._constructTerm(functionName, list(functionParams.keys()) + ['V', 'T']))
+                pi.append('\t:- time(T), ')
+                pi.append(self._constructTerm(functionName, list(functionParams.keys()) + ['V', 'T - 1']))
                 if functionName in fluentsWithNegatedEffects:
-                    Pi.append(f', not {self._constructTerm(functionName, list(functionParams.keys()) + ["V", "T"], strongNegation=True)}')
-                Pi.append('.\n')
+                    pi.append(f', not {self._constructTerm(functionName, list(functionParams.keys()) + ["V", "T"], strongNegation=True)}')
+                pi.append('.\n')
         if sum([functionName in fluentsInEffects for functionName in parser.functions.keys()]) == 0:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
 
-        Pi.append('\n')
+        pi.append('\n')
 
         def build_goal(goal : tuple) -> str:
             result = ''
             if goal[0] in parser.predicates:
                 return reprFluent(goal, timeTerm='timesteps')
-            elif goal[0] == 'and':
+
+            if goal[0] == 'and':
                 for t in goal[1]:
                     result += build_goal(t) + ', '
                 result = result[:-2]
@@ -233,66 +234,66 @@ class Translator:
 
             return result
 
-        Pi.append('% Goal representation\n')
-        Pi.append('%% Hard goals\n')
+        pi.append('% Goal representation\n')
+        pi.append('%% Hard goals\n')
         if len(parser.goal[1]) > 0:
-            Pi.append(f'goal :- {build_goal(parser.goal)}.\n:- not goal.\n')
+            pi.append(f'goal :- {build_goal(parser.goal)}.\n:- not goal.\n')
         else:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
 
-        Pi.append('%% Soft goals\n')
+        pi.append('%% Soft goals\n')
         if len(parser.metric) > 0:
             opt_goal, numeric_expression = parser.metric
             preferences = []
             negative_preferences = []
             for term in numeric_expression[1]:
                 if term[0] in parser.numeric_fluents:
-                    Pi.append(f'#{opt_goal}{{ V')
+                    pi.append(f'#{opt_goal}{{ V')
                     for t in list(term)[1:]:
-                        Pi.append(f', {t[1:].capitalize()}')
-                    Pi.append(f' : {reprFluent(term, timeTerm="timesteps", addList=["V"])} }}.\n')
+                        pi.append(f', {t[1:].capitalize()}')
+                    pi.append(f' : {reprFluent(term, timeTerm="timesteps", addList=["V"])} }}.\n')
                 elif term[0] == '*':
                     factors = term[1]
-                    Pi.append(f'#{opt_goal}{{ {int(float(factors[0][0]))} : ')
+                    pi.append(f'#{opt_goal}{{ {int(float(factors[0][0]))} : ')
                     if len(factors[1]) == 1:
                         preferences.append(factors[1][0])
-                        Pi.append(factors[1][0])
+                        pi.append(factors[1][0])
                     elif len(factors[1]) == 2:
                         assert factors[1][0] == 'is-violated'
                         preferences.append(factors[1][1][0])
                         negative_preferences.append(factors[1][1][0])
-                        Pi.append(f'violated_{factors[1][1][0]}')
-                    Pi.append(' }.\n')
+                        pi.append(f'violated_{factors[1][1][0]}')
+                    pi.append(' }.\n')
 
             if len(preferences) > 0:
-                Pi.append('%% Preferences\n')
+                pi.append('%% Preferences\n')
                 for prefName, prefExpression in [(p, parser.preferences[p]) for p in preferences]:
-                    Pi.append(f'{prefName}\t:- {build_goal(prefExpression)}.\n')
+                    pi.append(f'{prefName}\t:- {build_goal(prefExpression)}.\n')
                     if prefName in negative_preferences:
-                        Pi.append(f'violated_{prefName}\t:- not {prefName}.\n')
+                        pi.append(f'violated_{prefName}\t:- not {prefName}.\n')
         else:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
 
-        Pi.append('\n% Display\n')
-        Pi.append('#show occ/2.\n')
+        pi.append('\n% Display\n')
+        pi.append('#show occ/2.\n')
 
-        Pi.append('\n% Initial state\n')
+        pi.append('\n% Initial state\n')
 
-        Pi.append('%% Fluents\n')
+        pi.append('%% Fluents\n')
         for state in parser.state:
-            Pi.append(f'{reprFluent(state, timeTerm="0")}.\n')
+            pi.append(f'{reprFluent(state, timeTerm="0")}.\n')
         if len(parser.state) == 0:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
 
-        Pi.append('%% Numeric Fluents\n')
+        pi.append('%% Numeric Fluents\n')
         for name, data in parser.numeric_fluents.items():
             for params, value in data.items():
                 fluent = tuple([name] + list(params) + [value])
-                Pi.append(f'{reprFluent(fluent, timeTerm="0")}.\n')
+                pi.append(f'{reprFluent(fluent, timeTerm="0")}.\n')
         if len(parser.numeric_fluents) == 0:
-            Pi.append('% empty\n')
+            pi.append('% empty\n')
         
-        program = ''.join(Pi)
+        program = ''.join(pi)
 
         return program
 
@@ -312,13 +313,13 @@ if __name__ == '__main__':
     logging.info('Translator started')
     start_time = time.time()
     translator = Translator()
-    Pi = translator.translate(domain, problem, timesteps)
-    if Pi:
+    pi = translator.translate(domain, problem, timesteps)
+    if pi:
         filename = f'{problem}.lp'
         with open(filename, 'w') as f:
-            f.write(Pi)
+            f.write(pi)
             logging.info('Logic program written into file %s.lp', problem)
     else:
         logging.error('Translation was not possible')
         exit(1)
-    logging.info('Translator ended after ' + str(time.time() - start_time) + 's')
+    logging.info('Translator ended after %ss', str(time.time() - start_time))
