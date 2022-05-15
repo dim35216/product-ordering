@@ -1,7 +1,9 @@
+import math
 import time
 import os
 import random
 import logging
+from joblib import Parallel, delayed
 from typing import Set
 import pandas as pd
 import sys
@@ -32,8 +34,73 @@ def select_random_set_of_product(n : int, run : int) -> Set[str]:
     seed = random.randint(run * 100 + 1, (run + 1) * 100)
     random.seed(seed)
     samples = set(random.sample(products, n))
-    print('samples:', samples)
     return samples
+
+def run_experiment(n : int, run : int, encoding : str) -> None:
+    """Run an experiment instance for the given input, which is independent from the other
+    instances and can be runned in parallel. The result of the experiment is then just appended
+    to the results file
+
+    Args:
+        n (int): number of products
+        run (int): id of run
+        encoding (str): encoding
+    """
+    print('run_experiment(%s, %s, %s)', n, run, encoding)
+    products = select_random_set_of_product(n, run)
+    print('product samples: %s', str(products))
+
+    result = {'Time': math.nan, 'OptValue': math.nan, 'C': math.nan, 'GroundRules': math.nan,
+              'Variables': math.nan, 'Constraints': math.nan}
+    
+    if encoding == 'tsp':
+        t = time.time()
+        opt_value, order, ground_rules = run_tsp_encoding(products, run)
+        t = time.time() - t
+        result['Time'] = t
+        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
+        result['GroundRules'] = ground_rules
+
+    if encoding == 'asp':
+        t = time.time()
+        opt_value, order, ground_rules = run_asp(products, run)
+        t = time.time() - t
+        result['Time'] = t
+        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
+        result['GroundRules'] = ground_rules
+
+    if encoding == 'seq':
+        t = time.time()
+        opt_value, order, ground_rules = run_seq_encoding(products, run)
+        t = time.time() - t
+        result['Time'] = t
+        result['OptValue'] = opt_value
+        result['GroundRules'] = ground_rules
+
+    if encoding == 'bad':
+        t = time.time()
+        opt_value, order, ground_rules = run_bad_encoding(products, run)
+        t = time.time() - t
+        result['Time'] = t
+        result['OptValue'] = opt_value
+        result['GroundRules'] = ground_rules
+
+    if encoding == 'ilp':
+        t = time.time()
+        opt_value, order, numVariables, numConstraints = run_ilp(products, run)
+        t = time.time() - t
+        result['Time'] = t
+        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
+        result['Variables'] = numVariables
+        result['Constraints'] = numConstraints
+
+    with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
+        f.write(f'{n},{run},{encoding},{result["Time"]},{result["OptValue"]}, ' + \
+            f'{result["C"]},{result["GroundRules"]},{result["Variables"]},' + \
+            f'{result["Constraints"]}\n')
 
 if __name__ == '__main__':
     """Computational experiment for comparing different approaches for computing the Product
@@ -50,10 +117,10 @@ if __name__ == '__main__':
 
     encodings = [
         'tsp',
-        # 'asp',
-        # 'seq',
+        'asp',
+        'seq',
         'bad',
-        # 'ilp'
+        'ilp'
     ]
     
     # Make and clean instances folders
@@ -68,74 +135,11 @@ if __name__ == '__main__':
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
 
-    numProducts = list(range(10, 40, 4)) # [4, 8, 12, 16, 20, 24]
+    numProducts = list(range(10, 50, 4)) # [4, 8, 12, 16, 20, 24]
     runs = list(range(3))
-    index = pd.MultiIndex.from_product([numProducts, runs, encodings],
-        names=['NumProducts', 'Run', 'Encoding'])
-    df_results = pd.DataFrame([], index=index,
-        columns=['Time', 'OptValue', 'C', 'GroundRules', 'Variables', 'Constraints'])
 
-    for n in numProducts:
-        print('n:', n)
-        for run in runs:
-            print('--------')
-            print('run:', run)
-            products = select_random_set_of_product(n, run)
-
-            if 'tsp' in encodings:
-                print('tsp encoding')
-                t = time.time()
-                opt_value, order, ground_rules = run_tsp_encoding(products, run)
-                t = time.time() - t
-                df_results['Time'][(n, run, 'tsp')] = t
-                df_results['OptValue'][(n, run, 'tsp')] = opt_value
-                df_results['C'][(n, run, 'tsp')] = calculate_oct(order)
-                df_results['GroundRules'][(n, run, 'tsp')] = ground_rules
-                print(t)
-
-            if 'asp' in encodings:
-                print('asp encoding')
-                t = time.time()
-                opt_value, order, ground_rules = run_asp(products, run)
-                t = time.time() - t
-                df_results['Time'][(n, run, 'asp')] = t
-                df_results['OptValue'][(n, run, 'asp')] = opt_value
-                df_results['C'][(n, run, 'asp')] = calculate_oct(order)
-                df_results['GroundRules'][(n, run, 'asp')] = ground_rules
-                print(t)
-
-            if 'seq' in encodings:
-                print('seq encoding')
-                t = time.time()
-                opt_value, order, ground_rules = run_seq_encoding(products, run)
-                t = time.time() - t
-                df_results['Time'][(n, run, 'seq')] = t
-                df_results['OptValue'][(n, run, 'seq')] = opt_value
-                df_results['GroundRules'][(n, run, 'seq')] = ground_rules
-                print(t)
-
-            if 'bad' in encodings:
-                print('bad encoding')
-                t = time.time()
-                opt_value, order, ground_rules = run_bad_encoding(products, run)
-                t = time.time() - t
-                df_results['Time'][(n, run, 'bad')] = t
-                df_results['OptValue'][(n, run, 'bad')] = opt_value
-                df_results['GroundRules'][(n, run, 'bad')] = ground_rules
-                print(t)
-
-            if 'ilp' in encodings:
-                print('ilp encoding')
-                t = time.time()
-                opt_value, order, numVariables, numConstraints = run_ilp(products, run)
-                t = time.time() - t
-                df_results['Time'][(n, run, 'ilp')] = t
-                df_results['OptValue'][(n, run, 'ilp')] = opt_value
-                df_results['C'][(n, run, 'ilp')] = calculate_oct(order)
-                df_results['Variables'][(n, run, 'ilp')] = numVariables
-                df_results['Constraints'][(n, run, 'ilp')] = numConstraints
-                print(t)
-
-            print('--------')
-
-        df_results.to_csv(RESULTS_FILE)
+    Parallel(n_jobs = -1)(delayed(run_experiment)(n, run, encoding) \
+        for n in numProducts \
+        for run in runs \
+        for encoding in encodings \
+    )

@@ -2,7 +2,7 @@ from typing import Set, Dict, Any, List
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import scan_tokens, parse_hierarchy, parse_fluents, frozenset_of_tuples, split_predicates, parse_goal
+from src.pddl.utils import scan_tokens, parse_hierarchy, parse_fluents, frozenset_of_tuples, split_predicates, parse_goal
 from action import Action
 
 class Parser:
