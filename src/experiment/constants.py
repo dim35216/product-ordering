@@ -16,4 +16,4 @@ DOMAIN_PDDL = os.path.join(PROJECT_FOLDER, 'examples', 'productordering', 'domai
 RESULTS_FILE = os.path.join(PROJECT_FOLDER, 'experiments', 'results.csv')
 
 # Timeout per experiment in seconds
-TIMEOUT = 60.0
+TIMEOUT = 600.0

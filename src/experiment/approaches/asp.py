@@ -3,63 +3,12 @@ import re
 import os
 import logging
 from typing import Set, List, Tuple
-import pandas as pd
 import sys
 sys.path.append(os.path.abspath('..'))
-from constants import CHANGEOVER_MATRIX, DOMAIN_PDDL, PROJECT_FOLDER, TIMEOUT
+from constants import DOMAIN_PDDL, PROJECT_FOLDER, TIMEOUT
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
-from src.translator.translator import Translator
-
-def create_instance(products : Set[str], filename : str) -> None:
-    """Modelling an Product Ordering problem instance as a classical planning problem with
-    preferences with the help of PDDL
-
-    Args:
-        products (Set[str]): set of products
-        filename (str): name of resulting PDDL instance file
-    """
-    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-
-    result = \
-f'''(define (problem ProductOrdering-{filename})
-    (:domain ProductOrdering)
-
-(:objects'''
-    for product in products:
-        result += f'\n    p{product}'
-    result += \
-''' - product
-)
-
-(:goal
-    (and
-        (complete)
-'''
-    for product in products:
-        result += f'        (worked-off p{product})\n'
-    result += \
-'''    )
-)
-
-(:init
-'''
-    for product in products:
-        result += f'    (available p{product})\n'
-    for product1 in products:
-        for product2 in products:
-            value = df_matrix[product2][int(product1)]
-            result += f'    (= (changeover-time p{product1} p{product2}) {value})\n'
-    result += \
-''')
-
-(:metric minimize (+ (overall-changeover-time)))
-
-)
-'''
-
-    with open(filename, 'w', encoding='utf-8') as f:
-        f.write(result)
-    return
+from src.pddl.modeler.modeler import Modeler
+from src.pddl.translator.translator import Translator
 
 def interpret_clingo(cmd_output : str, timesteps : int) -> Tuple[int, List[str]]:
     """Parsing the command line output of the answer set solver clingo for extracting the
@@ -131,7 +80,9 @@ def run_asp(products : Set[str], run : int) -> Tuple[int, List[str], int]:
     pddl_filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'asp',
         f'instance_{len(products)}_{run}.pddl')
     lp_filename = f'{pddl_filename}.lp'
-    create_instance(products, pddl_filename)
+    
+    modeler = Modeler()
+    modeler.create_instance(products, pddl_filename)
     assert os.path.exists(pddl_filename)
     assert os.path.exists(DOMAIN_PDDL)
 

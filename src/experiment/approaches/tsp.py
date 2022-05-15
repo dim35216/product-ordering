@@ -86,7 +86,7 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
 
     return opt_value, order
 
-def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], int]:
+def run_tsp_encoding(products : Set[str], run : int, start : str = None, end : str = None) -> Tuple[int, List[str], int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -106,8 +106,12 @@ def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
     assert os.path.exists(TPO_ENCODING)
 
     try:
-        args=['clingo', TSP_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
-        process = subprocess.run(args, capture_output=True, text=True, check=True, timeout=TIMEOUT)
+        args = ['clingo', TSP_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
+        if start is not None:
+            args += [f'-c s=p{start}']
+        if end is not None:
+            args += [f'-c e=p{end}']
+        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         return -1, [], -1
 
@@ -116,7 +120,7 @@ def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
 
     try:
         args=['gringo', TSP_ENCODING, TPO_ENCODING, filename, '--text']
-        lines = subprocess.run(args, capture_output=True, check=True).stdout.count(b'\n')
+        lines = subprocess.run(args, capture_output=True).stdout.count(b'\n')
     except subprocess.TimeoutExpired:
         lines = -1
 
