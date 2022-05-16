@@ -1,9 +1,12 @@
 from typing import Set, Dict, Any, List
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from src.pddl.utils import scan_tokens, parse_hierarchy, parse_fluents, frozenset_of_tuples, split_predicates, parse_goal
-from action import Action
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from constants.constants import PROJECT_FOLDER
+sys.path.append(PROJECT_FOLDER)
+from src.pddl.parser.action import Action
+from src.pddl.parser.utils import scan_tokens, parse_hierarchy, parse_fluents, \
+    frozenset_of_tuples, split_predicates, parse_goal
 
 class Parser:
     """PDDL parser, which parses PDDL planning problems divided
@@ -71,22 +74,22 @@ class Parser:
                         raise Exception('Requirement ' + req + ' not supported')
                 group.difference_update(self.SUPPORTED_SUPER_REQUIREMENTS)
                 self.requirements.update(group)
-            
+
             elif token == ':constants':
                 parse_hierarchy(group, self.constants, 'constants', False)
-            
+
             elif token == ':functions':
                 parse_fluents(group, self.functions, 'functions')
-            
+
             elif token == ':predicates':
                 parse_fluents(group, self.predicates, 'predicates')
-            
+
             elif token == ':types':
                 parse_hierarchy(group, self.types, 'types', True)
-            
+
             elif token == ':action':
                 self.parse_action(group)
-            
+
             else:
                 print(str(token) + ' is not recognized in domain')
 
@@ -162,7 +165,7 @@ class Parser:
         parameters = []
         preconditions : tuple = ()
         effects : tuple = ('and', [])
-        
+
         while group:
             token = group.pop(0)
 

@@ -1,5 +1,6 @@
 # Custom
 experiments/instances/
+test/pddl/modeler/test.pddl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

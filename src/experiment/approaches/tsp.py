@@ -1,11 +1,15 @@
+"""Approach for solving the Product Ordering approach:
+Interpretation of problem instance as TSP and usage of perfect encoding
+"""
 import subprocess
 import re
 import os
+import sys
 from typing import Set, List, Tuple
 import pandas as pd
-import sys
-sys.path.append(os.path.abspath('..'))
-from constants import CHANGEOVER_MATRIX, TSP_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from constants.constants import CHANGEOVER_MATRIX, TSP_ENCODING, TPO_ENCODING, PROJECT_FOLDER, \
+                                TIMEOUT
 
 def create_instance(products : Set[str], filename : str) -> None:
     """Modelling an Product Ordering problem instance as a logic program in Answer Set Programming
@@ -29,9 +33,8 @@ def create_instance(products : Set[str], filename : str) -> None:
                 value = df_matrix[product2][int(product1)]
                 result += f'cost(p{product1}, p{product2}, {value}).\n'
 
-    with open(filename, 'w') as f:
-        f.write(result)
-    return
+    with open(filename, 'w') as filehandle:
+        filehandle.write(result)
 
 def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
     """Parsing the command line output of the answer set solver clingo for extracting the
@@ -47,7 +50,7 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
     pattern_start = re.compile(r'cycle\(v,p(\d*)\)')
     pattern_end = re.compile(r'cycle\(p(\d*),v\)')
     pattern_opt = re.compile(r'Optimization: (\d*)')
-    
+
     opt_value = -1
     start = None
     end = None
@@ -57,13 +60,13 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
         result_start = pattern_start.match(line)
         result_end = pattern_end.match(line)
         result_opt = pattern_opt.match(line)
-        
+
         if result_cycle:
-            p1 = result_cycle.group(1)
-            p2 = result_cycle.group(2)
-            assert p1 not in order_dict
-            order_dict[p1] = p2
-        
+            product1 = result_cycle.group(1)
+            product2 = result_cycle.group(2)
+            assert product1 not in order_dict
+            order_dict[product1] = product2
+
         if result_start:
             start = result_start.group(1)
 
@@ -76,7 +79,7 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
     assert opt_value != -1
     assert start is not None
     assert end is not None
-    
+
     order = []
     current = start
     while current != end:
@@ -86,7 +89,7 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
 
     return opt_value, order
 
-def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], int]:
+def run_tsp_encoding(products : Set[str], run : int, start : str = None, end : str = None) -> Tuple[int, List[str], int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -106,8 +109,12 @@ def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
     assert os.path.exists(TPO_ENCODING)
 
     try:
-        args=['clingo', TSP_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
-        process = subprocess.run(args, capture_output=True, text=True, check=True, timeout=TIMEOUT)
+        args = ['clingo', TSP_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
+        if start is not None:
+            args += [f'-c s=p{start}']
+        if end is not None:
+            args += [f'-c e=p{end}']
+        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         return -1, [], -1
 
@@ -116,7 +123,7 @@ def run_tsp_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
 
     try:
         args=['gringo', TSP_ENCODING, TPO_ENCODING, filename, '--text']
-        lines = subprocess.run(args, capture_output=True, check=True).stdout.count(b'\n')
+        lines = subprocess.run(args, capture_output=True).stdout.count(b'\n')
     except subprocess.TimeoutExpired:
         lines = -1
 

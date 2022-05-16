@@ -47,3 +47,9 @@ NumProducts,Run,Encoding,Time,OptValue,C,GroundRules,Variables,Constraints
 38,1,bad,,,,,,
 38,2,tsp,,,,,,
 38,2,bad,,,,,,
+4,0,tsp,0.3169076442718506,285, 285,150,nan,nan
+4,1,tsp,0.3199043273925781,270, 270,125,nan,nan
+4,2,tsp,0.3159053325653076,240, 240,130,nan,nan
+4,1,tsp,0.31000185012817383,270,270,125,nan,nan
+4,0,tsp,0.3130006790161133,285,285,150,nan,nan
+4,2,tsp,0.30899500846862793,240,240,130,nan,nan

@@ -1,11 +1,15 @@
+"""Approach for solving the Product Ordering approach:
+Interpretation of problem instance as TSP and usage of sequential encoding
+"""
 import subprocess
-import os
 from typing import Set, Tuple, List
+import os
 import sys
-sys.path.append(os.path.abspath('..'))
-from constants import TSP_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
-from utils import calculate_oct
-from approaches.tsp import create_instance, interpret_clingo
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from constants.constants import TSP_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
+sys.path.append(os.path.abspath(PROJECT_FOLDER))
+from src.experiment.approaches.tsp import create_instance, interpret_clingo
+from src.experiment.utils import calculate_oct
 
 def run_seq_encoding(products : Set[str], run : int) -> Tuple[int, List[int], int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding,
@@ -31,13 +35,15 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[int, List[int], in
     template_args = ['clingo', TSP_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
     num_calls = len(products) * (len(products) - 1)
 
+    product1 = ''
+    product2 = ''
     min_oct = 10080
     min_order = []
-    for p1 in products:
-        for p2 in products:
-            if p1 != p2:
+    for product1 in products:
+        for product2 in products:
+            if product1 != product2:
                 try:
-                    args = template_args + [f'-c s=p{p1}', f'-c e=p{p2}']
+                    args = template_args + [f'-c s=p{product1}', f'-c e=p{product2}']
                     process = subprocess.run(args, capture_output=True, text=True, check=True,
                                              timeout=TIMEOUT/num_calls)
                 except subprocess.TimeoutExpired:
@@ -46,14 +52,14 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[int, List[int], in
                 _, order = interpret_clingo(process.stdout)
                 assert len(order) == len(products)
 
-                oct = calculate_oct(order)
-                if oct < min_oct:
-                    min_oct = oct
+                cur_oct = calculate_oct(order)
+                if cur_oct < min_oct:
+                    min_oct = cur_oct
                     min_order = order
 
     try:
         args = ['gringo', TSP_ENCODING, TPO_ENCODING, filename,
-                '--text'] + [f'-c s=p{p1}', f'-c e=p{p2}']
+                '--text'] + [f'-c s=p{product1}', f'-c e=p{product2}']
         lines = subprocess.run(args, capture_output=True, check=True).stdout.count(b'\n')
         lines = lines * num_calls
     except subprocess.TimeoutExpired:
