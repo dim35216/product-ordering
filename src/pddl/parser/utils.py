@@ -1,7 +1,15 @@
 import re
-from typing import List, Dict, Union, Tuple
+from typing import FrozenSet, List, Dict, Union, Tuple
 
-def frozenset_of_tuples(data):
+def frozenset_of_tuples(data : set) -> FrozenSet[tuple]:
+    """Auxiliary function for constructing a frozenset (immutable set) of tuples (immutable list)
+
+    Args:
+        data (set): input data
+
+    Returns:
+        FrozenSet[tuple]: resulting frozenset of tuples
+    """
     return frozenset([tuple(token) for token in data])
 
 def scan_tokens(filename : str) -> Union[str, list]:
@@ -13,13 +21,13 @@ def scan_tokens(filename : str) -> Union[str, list]:
     Returns:
         Union[str, list]: hierarchied list of tokens extracted from the PDDL file
     """
-    with open(filename) as f:
+    with open(filename) as filehandle:
         # Remove single line comments
-        s = re.sub(r';.*$', '', f.read(), flags=re.MULTILINE).lower()
+        content = re.sub(r';.*$', '', filehandle.read(), flags=re.MULTILINE).lower()
     # Tokenize
     stack = []
     tokens : List[Union[str, list]] = []
-    for token in re.findall(r'[()]|[^\s()]+', s):
+    for token in re.findall(r'[()]|[^\s()]+', content):
         if token == '(':
             stack.append(tokens)
             tokens = []
@@ -112,7 +120,7 @@ def parse_goal(group : list) -> Tuple[tuple, Dict[str, tuple]]:
     if len(group) == 0:
         return goal, preferences
 
-    elif group[0] == 'and':
+    if group[0] == 'and':
         if len(group) <= 1:
             raise Exception('Unexpected and in goal')
         predicates = []
@@ -189,5 +197,5 @@ def split_predicates(group : list, name : str, part : str) -> tuple:
 
     else:
         result = tuple(group)
-        
+
     return result

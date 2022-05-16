@@ -1,10 +1,14 @@
+"""Approach for solving the Product Ordering approach:
+Interpretation of problem instance as TSP and usage of bad encoding
+"""
 import subprocess
-import os
 from typing import Set, Tuple, List
+import os
 import sys
-sys.path.append(os.path.abspath('..'))
-from constants import BAD_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
-from approaches.tsp import create_instance, interpret_clingo
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from constants.constants import BAD_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
+sys.path.append(os.path.abspath(PROJECT_FOLDER))
+from src.experiment.approaches.tsp import create_instance, interpret_clingo
 
 def run_bad_encoding(products : Set[str], run : int) -> Tuple[int, List[str], int]:
     """Computing the Product Ordering problem as a logic program using the bad TSP encoding;

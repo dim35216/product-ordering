@@ -1,12 +1,24 @@
 import time
 from typing import Set
-import pandas as pd
 import logging
+import argparse
 import os
 import sys
+import pandas as pd
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from constants.constants import CHANGEOVER_MATRIX
 
 class Modeler:
-    def __init__(self, matrix):
+    """This class implements a modeler, which takes an instance of the Product Ordering problem
+       and describes it in PDDL (Planning Domain Definition Language)
+    """
+
+    def __init__(self, matrix : str) -> None:
+        """Constructor of PDDL modeler
+
+        Args:
+            matrix (str): path to changeover matrix
+        """
         self.matrix = matrix
 
     def create_instance(self, products : Set[str], filename : str) -> None:
@@ -18,9 +30,10 @@ class Modeler:
             filename (str): name of resulting PDDL instance file
         """
         df_matrix = pd.read_csv(self.matrix, index_col=0)
+        problemname = os.path.split(filename)[-1].split('.')[0]
 
         result = \
-f'''(define (problem ProductOrdering-{filename})
+f'''(define (problem ProductOrdering-{problemname})
     (:domain ProductOrdering)
 
 (:objects'''
@@ -56,26 +69,30 @@ f'''(define (problem ProductOrdering-{filename})
 )
 '''
 
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(result)
-        return
+        with open(filename, 'w', encoding='utf-8') as filehandle:
+            filehandle.write(result)
 
 #-----------------------------------------------
 # Main
 #-----------------------------------------------
+parser = argparse.ArgumentParser(
+    description='Model a Product Ordering problem instance in PDDL.' + \
+    'Please give the following command line arguments: ' + \
+    'python [./]modeler.py <filename> -p <products>'
+    )
+parser.add_argument('filename', type=str, help='name of resulting PDDL file')
+parser.add_argument('-p', '--products', nargs='+')
+
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print('Please give the following command line arguments: ' + \
-            'python [./]modeler.py <products> <filename>')
-        sys.exit(1)
-    products = sys.argv[1]
-    filename = sys.argv[2]
+    args = parser.parse_args()
+    filename = args.filename
+    products = args.products
     logging.basicConfig(level=logging.INFO)
     logging.info('Modeler started')
     start_time = time.time()
-    modeler = Modeler()
-    pi = modeler.create_instance(products, filename)
+    modeler = Modeler(CHANGEOVER_MATRIX)
+    modeler.create_instance(products, filename)
     if not os.path.exists(filename):
         logging.error('Modelling was not possible')
-        exit(1)
-    logging.info('Translator ended after %ss', str(time.time() - start_time))
+        sys.exit(1)
+    logging.info('Modeler ended after %ss', str(time.time() - start_time))
