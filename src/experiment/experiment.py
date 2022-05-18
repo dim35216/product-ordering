@@ -8,7 +8,6 @@ Ordering problem. These approaches are:
     combination of start and end product
 - Using the ILP approach
 """
-
 import sys
 import math
 import time
@@ -20,8 +19,8 @@ from joblib import Parallel, delayed
 import pandas as pd
 from approaches.tsp import run_tsp_encoding
 from approaches.asp import run_asp
-from approaches.seq import run_seq_encoding
 from approaches.bad import run_bad_encoding
+from approaches.seq import run_seq_encoding
 from approaches.ilp import run_ilp
 from utils import calculate_oct
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -62,45 +61,49 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
     logging.debug('product samples: %s', str(products))
 
     result = {'Time': math.nan, 'OptValue': math.nan, 'C': math.nan, 'GroundRules': math.nan,
-              'Variables': math.nan, 'Constraints': math.nan}
+              'Models': math.nan, 'Variables': math.nan, 'Constraints': math.nan}
 
     if encoding == 'tsp':
         temp = time.time()
-        opt_value, order, ground_rules = run_tsp_encoding(products, run)
+        opt_value, order, rules, models = run_tsp_encoding(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
-        result['GroundRules'] = ground_rules
+        result['GroundRules'] = rules
+        result['Models'] = models
 
     if encoding == 'asp':
         temp = time.time()
-        opt_value, order, ground_rules = run_asp(products, run)
+        opt_value, order, rules, models = run_asp(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
-        result['GroundRules'] = ground_rules
-
-    if encoding == 'seq':
-        temp = time.time()
-        opt_value, order, ground_rules = run_seq_encoding(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['OptValue'] = opt_value
-        result['GroundRules'] = ground_rules
+        result['GroundRules'] = rules
+        result['Models'] = models
 
     if encoding == 'bad':
         temp = time.time()
-        opt_value, order, ground_rules = run_bad_encoding(products, run)
+        opt_value, order, rules, models = run_bad_encoding(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
-        result['GroundRules'] = ground_rules
+        result['GroundRules'] = rules
+        result['Models'] = models
+
+    if encoding == 'seq':
+        temp = time.time()
+        opt_value, order, rules, models = run_seq_encoding(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['OptValue'] = opt_value
+        result['GroundRules'] = rules
+        result['Models'] = models
 
     if encoding == 'ilp':
         temp = time.time()
-        opt_value, order, num_variables, num_constraints = run_ilp(products, run)
+        opt_value, order, num_variables, num_constraints = run_ilp(products)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
@@ -118,10 +121,10 @@ if __name__ == '__main__':
 
     encodings = [
         'tsp',
-        # 'asp',
-        # 'seq',
-        # 'bad',
-        # 'ilp'
+        'asp',
+        'bad',
+        'seq',
+        'ilp'
     ]
 
     # Make and clean instances folders
@@ -136,8 +139,8 @@ if __name__ == '__main__':
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
 
-    numProducts = [4] # list(range(10, 50, 4)) # [4, 8, 12, 16, 20, 24]
-    runs = list(range(3))
+    numProducts = [24] # list(range(10, 50, 4)) # [4, 8, 12, 16, 20, 24]
+    runs = [0] # list(range(3))
 
     Parallel(n_jobs = -1)(delayed(run_experiment)(n, run, encoding) \
         for n in numProducts \

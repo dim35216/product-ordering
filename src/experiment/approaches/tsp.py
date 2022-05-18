@@ -1,65 +1,39 @@
 """Approach for solving the Product Ordering approach:
 Interpretation of problem instance as TSP and usage of perfect encoding
 """
-import subprocess
+from typing import Sequence, Set, List, Tuple, Union
+import logging
 import re
 import os
 import sys
-from typing import Set, List, Tuple
-import pandas as pd
+import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import CHANGEOVER_MATRIX, TSP_ENCODING, TPO_ENCODING, PROJECT_FOLDER, \
-                                TIMEOUT
+from constants.constants import TSP_ENCODING, PROJECT_FOLDER
+sys.path.append(PROJECT_FOLDER)
+from src.experiment.utils import build_graph, create_tsp_instance
 
-def create_instance(products : Set[str], filename : str) -> None:
-    """Modelling an Product Ordering problem instance as a logic program in Answer Set Programming
-
-    Args:
-        products (Set[str]): set of products
-        filename (str): file to resulting LP instance file
-    """
-    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-
-    result = ''
-    for product in products:
-        result += f'node(p{product}).\n'
-    for product1 in products:
-        for product2 in products:
-            if product1 != product2:
-                result += f'edge(p{product1}, p{product2}).\n'
-    for product1 in products:
-        for product2 in products:
-            if product1 != product2:
-                value = df_matrix[product2][int(product1)]
-                result += f'cost(p{product1}, p{product2}, {value}).\n'
-
-    with open(filename, 'w') as filehandle:
-        filehandle.write(result)
-
-def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
+def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
     """Parsing the command line output of the answer set solver clingo for extracting the
     resulting order of products for the TSP encoding
 
     Args:
-        cmd_output (str): command line output of clingo
+        symbols (Sequence[clingo.Symbol]): set of symbols outputted by clingo
 
     Returns:
-        Tuple[int, List[str]]: objective value, optimal product order
+        List[str]: optimal product order
     """
-    pattern_cycle = re.compile(r'cycle\(p(\d*),p(\d*)\)')
-    pattern_start = re.compile(r'cycle\(v,p(\d*)\)')
-    pattern_end = re.compile(r'cycle\(p(\d*),v\)')
-    pattern_opt = re.compile(r'Optimization: (\d*)')
+    pattern_cycle = re.compile(r'cycle\((\d*),(\d*)\)')
+    pattern_start = re.compile(r'cycle\(v,(\d*)\)')
+    pattern_end = re.compile(r'cycle\((\d*),v\)')
 
-    opt_value = -1
     start = None
     end = None
     order_dict = {}
-    for line in cmd_output.split('\n'):
-        result_cycle = pattern_cycle.match(line)
-        result_start = pattern_start.match(line)
-        result_end = pattern_end.match(line)
-        result_opt = pattern_opt.match(line)
+    for symbol in symbols:
+        atom = str(symbol)
+        result_cycle = pattern_cycle.match(atom)
+        result_start = pattern_start.match(atom)
+        result_end = pattern_end.match(atom)
 
         if result_cycle:
             product1 = result_cycle.group(1)
@@ -73,10 +47,6 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
         if result_end:
             end = result_end.group(1)
 
-        if result_opt:
-            opt_value = int(result_opt.group(1))
-
-    assert opt_value != -1
     assert start is not None
     assert end is not None
 
@@ -87,9 +57,10 @@ def interpret_clingo(cmd_output : str) -> Tuple[int, List[str]]:
         current = order_dict[current]
     order.append(end)
 
-    return opt_value, order
+    return order
 
-def run_tsp_encoding(products : Set[str], run : int, start : str = None, end : str = None) -> Tuple[int, List[str], int]:
+def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
+    end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -97,34 +68,38 @@ def run_tsp_encoding(products : Set[str], run : int, start : str = None, end : s
     Args:
         products (Set[str]): set of products
         run (int): id of run
+        start (Union[str, None], optional): start product. Defaults to None.
+        end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], int]: objective value, optimal product order, number of ground rules
+        Tuple[int, List[str], int, int]: objective value, optimal product order, number of ground \
+            rules, number of calculated models
     """
+    edge_weights = build_graph(products, start, end, cyclic=True)
+    instance = create_tsp_instance(edge_weights)
+
     filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'tsp',
         f'instance_{len(products)}_{run}.lp')
-    create_instance(products, filename)
-    assert os.path.exists(filename)
-    assert os.path.exists(TSP_ENCODING)
-    assert os.path.exists(TPO_ENCODING)
+    with open(filename, 'w') as filehandle:
+        filehandle.write(instance)
 
-    try:
-        args = ['clingo', TSP_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
-        if start is not None:
-            args += [f'-c s=p{start}']
-        if end is not None:
-            args += [f'-c e=p{end}']
-        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
-    except subprocess.TimeoutExpired:
-        return -1, [], -1
-
-    opt_value, order = interpret_clingo(process.stdout)
+    ctl = clingo.Control()
+    ctl.load(TSP_ENCODING)
+    ctl.add('base', [], instance)
+    ctl.ground([('base', [])])
+    solve_handle = ctl.solve(yield_=True)
+    assert isinstance(solve_handle, clingo.SolveHandle)
+    model = None
+    for model in solve_handle:
+        pass
+    if model is None:
+        logging.error('The problem does not have an optimal solution.')
+        return -1, [], -1, -1
+    order = interpret_clingo(model.symbols(shown=True))
     assert len(order) == len(products)
 
-    try:
-        args=['gringo', TSP_ENCODING, TPO_ENCODING, filename, '--text']
-        lines = subprocess.run(args, capture_output=True).stdout.count(b'\n')
-    except subprocess.TimeoutExpired:
-        lines = -1
+    rules = int(ctl.statistics['problem']['lp']['rules'])
+    opt_value = int(ctl.statistics['summary']['costs'][0])
+    models = int(ctl.statistics['summary']['models']['enumerated'])
 
-    return opt_value, order, lines
+    return opt_value, order, rules, models

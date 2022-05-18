@@ -1,16 +1,19 @@
 """Approach for solving the Product Ordering approach:
 Interpretation of problem instance as TSP and usage of bad encoding
 """
-import subprocess
-from typing import Set, Tuple, List
+from typing import Set, Tuple, List, Union
+import logging
 import os
 import sys
+import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import BAD_ENCODING, TPO_ENCODING, PROJECT_FOLDER, TIMEOUT
+from constants.constants import BAD_ENCODING, PROJECT_FOLDER
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
-from src.experiment.approaches.tsp import create_instance, interpret_clingo
+from src.experiment.approaches.tsp import interpret_clingo
+from src.experiment.utils import build_graph, create_tsp_instance
 
-def run_bad_encoding(products : Set[str], run : int) -> Tuple[int, List[str], int]:
+def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
+    end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
     """Computing the Product Ordering problem as a logic program using the bad TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -18,30 +21,38 @@ def run_bad_encoding(products : Set[str], run : int) -> Tuple[int, List[str], in
     Args:
         products (Set[str]): set of products
         run (int): id of run
+        start (Union[str, None], optional): start product. Defaults to None.
+        end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], int]: minimal overall changeover time, optimal product order, number of ground rules
+        Tuple[int, List[str], int, int]: objective value, optimal product order, number of ground \
+            rules, number of calculated models
     """
+    edge_weights = build_graph(products, start, end, cyclic=True)
+    instance = create_tsp_instance(edge_weights)
+
     filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'bad',
         f'instance_{len(products)}_{run}.lp')
-    create_instance(products, filename)
-    assert os.path.exists(filename)
-    assert os.path.exists(BAD_ENCODING)
+    with open(filename, 'w') as filehandle:
+        filehandle.write(instance)
 
-    try:
-        args = ['clingo', BAD_ENCODING, TPO_ENCODING, filename, '--quiet=1,0', '--out-ifs=\n']
-        process = subprocess.run(args, capture_output=True, text=True, check=True, timeout=TIMEOUT)
-    except subprocess.TimeoutExpired:
-        return -1, [], -1
-
-    opt_value, order = interpret_clingo(process.stdout)
+    ctl = clingo.Control()
+    ctl.load(BAD_ENCODING)
+    ctl.add('base', [], instance)
+    ctl.ground([('base', [])])
+    solve_handle = ctl.solve(yield_=True)
+    assert isinstance(solve_handle, clingo.SolveHandle)
+    model = None
+    for model in solve_handle:
+        pass
+    if model is None:
+        logging.error('The problem does not have an optimal solution.')
+        return -1, [], -1, -1
+    order = interpret_clingo(model.symbols(shown=True))
     assert len(order) == len(products)
 
-    try:
-        args=['gringo', BAD_ENCODING, TPO_ENCODING, filename, '--text']
-        lines = subprocess.run(args, capture_output=True, check=True,
-            timeout=TIMEOUT).stdout.count(b'\n')
-    except subprocess.TimeoutExpired:
-        lines = -1
+    rules = int(ctl.statistics['problem']['lp']['rules'])
+    opt_value = int(ctl.statistics['summary']['costs'][0])
+    models = int(ctl.statistics['summary']['models']['enumerated'])
 
-    return opt_value, order, lines
+    return opt_value, order, rules, models
