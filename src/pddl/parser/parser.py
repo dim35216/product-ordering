@@ -1,4 +1,5 @@
 from typing import Set, Dict, Any, List
+import logging
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -91,7 +92,7 @@ class Parser:
                 self.parse_action(group)
 
             else:
-                print(str(token) + ' is not recognized in domain')
+                logging.error(str(token) + ' is not recognized in domain')
 
 
     def parse_problem(self, problem_filename : str):
@@ -147,7 +148,7 @@ class Parser:
                 self.metric = tuple([group[0], self.parse_numeric_operation(group[1])])
 
             else:
-                print(str(token) + ' is not recognized in problem')
+                logging.error(str(token) + ' is not recognized in problem')
 
     def parse_action(self, group : list):
         """Parse PDDL action
@@ -194,7 +195,7 @@ class Parser:
                 effects = split_predicates(group.pop(0), name, ' effects')
 
             else:
-                print(str(token) + ' is not recognized in action')
+                logging.error(str(token) + ' is not recognized in action')
 
         self.actions.append(Action(name, parameters, preconditions, effects))
 
