@@ -14,14 +14,12 @@ from src.experiment.utils import calculate_oct, build_graph
 
 LOGGER = logging.getLogger('experiment')
 
-def create_model(edge_weights : Dict[str, Dict[str, int]], start : str = 'start', \
-    end : str = 'end') -> Tuple[pywraplp.Solver, Dict[str, Dict[str, pywraplp.Variable]]]:
+def create_model(edge_weights : Dict[str, Dict[str, int]]) -> Tuple[pywraplp.Solver, \
+    Dict[str, Dict[str, pywraplp.Variable]]]:
     """Creating an ILP model of the Product Ordering problem for a Google OR-Tools LP solver
 
     Args:
         edge_weights (Dict[str, Dict[str, int]]): model of graph of problem instance
-        start (str, optional): start product. Defaults to 'start'.
-        end (str, optional): end product. Defaults to 'end'.
 
     Returns:
         Tuple[pywraplp.Solver, Dict[str, Dict[str, pywraplp.Variable]]]: Google OR-Tools LP \
@@ -115,14 +113,14 @@ def extract_order(variables : Dict[str, Dict[str, pywraplp.Variable]]) -> List[s
 
     return order
 
-def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
+def run_ilp(products : Set[str]) -> Tuple[List[str], int, int]:
     """Computing the Product Ordering problem as an ILP using Google OR-Tools
 
     Args:
         products (Set[str]): set of products
 
     Returns:
-        Tuple[int, List[str], int, int]: minimal overall changeover time, optimal product order, \
+        Tuple[List[str], int, int]: minimal overall changeover time, optimal product order, \
             number of variables, number of constraints
     """
     edge_weights = build_graph(products, cyclic=True)
@@ -133,7 +131,7 @@ def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
 
     if status != pywraplp.Solver.OPTIMAL:
         LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1
+        return [], -1, -1
 
     order = extract_order(variables)
 
