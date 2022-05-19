@@ -14,6 +14,8 @@ from src.experiment.utils import build_graph
 from src.pddl.modeler.modeler import Modeler
 from src.pddl.translator.translator import Translator
 
+LOGGER = logging.getLogger('experiment')
+
 def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List[str]:
     """Parsing the command line output of the answer set solver clingo for extracting the
     resulting order of products for the Answer Set Planning encoding
@@ -25,9 +27,9 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
     Returns:
         List[str]: optimal product order
     """
-    pattern_initialize = re.compile(r'occ\(initialize\(p(\d*)\),(\d*)\)')
-    pattern_switch = re.compile(r'occ\(switch\(p(\d*),p(\d*)\),(\d*)\)')
-    pattern_finalize = re.compile(r'occ\(finalize\(p(\d*)\),(\d*)\)')
+    pattern_initialize = re.compile(r'occ\(initialize\(p(\w*)\),(\d*)\)')
+    pattern_switch = re.compile(r'occ\(switch\(p(\w*),p(\w*)\),(\d*)\)')
+    pattern_finalize = re.compile(r'occ\(finalize\(p(\w*)\),(\d*)\)')
 
     p_start = None
     p_end = None
@@ -56,8 +58,11 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
             assert time == timesteps
 
     assert '' not in order
-    assert p_start == order[0]
-    assert p_end == order[-1]
+    assert order[0] == p_start
+    assert order[0] == 'start'
+    assert order[-1] == p_end
+    assert order[-1] == 'end'
+    order = order[1:-1]
 
     return order
 
@@ -81,17 +86,17 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     """
     pddl_filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'asp',
         f'instance_{len(products)}_{run}.pddl')
-    logging.debug('pddl_filename: %s', pddl_filename)
+    LOGGER.debug('pddl_filename: %s', pddl_filename)
     lp_filename = f'{pddl_filename}.lp'
 
-    edge_weights = build_graph(products, start, end, cyclic=True)
+    edge_weights = build_graph(products, start, end)
 
     modeler = Modeler()
     modeler.create_instance(edge_weights, pddl_filename)
     assert os.path.exists(pddl_filename)
     assert os.path.exists(DOMAIN_PDDL)
 
-    timesteps = len(products) + 1
+    timesteps = len(products) + 3
 
     translator = Translator()
     logic_program = translator.translate(domain=DOMAIN_PDDL, problem=pddl_filename,
@@ -110,7 +115,7 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     for model in solve_handle:
         pass
     if model is None:
-        logging.error('The problem does not have an optimal solution.')
+        LOGGER.info('The problem does not have an optimal solution.')
         return -1, [], -1, -1
     order = interpret_clingo(model.symbols(shown=True), timesteps)
     assert len(order) == len(products)

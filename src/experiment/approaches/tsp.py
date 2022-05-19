@@ -12,6 +12,8 @@ from constants.constants import TSP_ENCODING, PROJECT_FOLDER
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import build_graph, create_tsp_instance
 
+LOGGER = logging.getLogger('experiment')
+
 def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
     """Parsing the command line output of the answer set solver clingo for extracting the
     resulting order of products for the TSP encoding
@@ -93,7 +95,7 @@ def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = 
     for model in solve_handle:
         pass
     if model is None:
-        logging.error('The problem does not have an optimal solution.')
+        LOGGER.info('The problem does not have an optimal solution.')
         return -1, [], -1, -1
     order = interpret_clingo(model.symbols(shown=True))
     assert len(order) == len(products)

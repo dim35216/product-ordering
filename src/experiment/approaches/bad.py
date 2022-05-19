@@ -12,6 +12,8 @@ sys.path.append(os.path.abspath(PROJECT_FOLDER))
 from src.experiment.approaches.tsp import interpret_clingo
 from src.experiment.utils import build_graph, create_tsp_instance
 
+LOGGER = logging.getLogger('experiment')
+
 def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
     end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
     """Computing the Product Ordering problem as a logic program using the bad TSP encoding;
@@ -46,7 +48,7 @@ def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = 
     for model in solve_handle:
         pass
     if model is None:
-        logging.error('The problem does not have an optimal solution.')
+        LOGGER.info('The problem does not have an optimal solution.')
         return -1, [], -1, -1
     order = interpret_clingo(model.symbols(shown=True))
     assert len(order) == len(products)
