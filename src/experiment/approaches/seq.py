@@ -12,6 +12,8 @@ sys.path.append(os.path.abspath(PROJECT_FOLDER))
 from src.experiment.approaches.tsp import interpret_clingo
 from src.experiment.utils import calculate_oct, build_graph, create_tsp_instance
 
+LOGGER = logging.getLogger('experiment')
+
 def run_seq_encoding(products : Set[str], run : int) -> Tuple[int, List[int], int, int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding,
     but the start and end product is specified explicitly; as a consequence, the solver runs O(n^2)
@@ -53,7 +55,7 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[int, List[int], in
                 for model in solve_handle:
                     pass
                 if model is None:
-                    logging.error('The problem does not have an optimal solution.')
+                    LOGGER.error('The problem does not have an optimal solution.')
                     return -1, [], -1, -1
                 order = interpret_clingo(model.symbols(shown=True))
                 assert len(order) == len(products)
@@ -66,9 +68,8 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[int, List[int], in
                 overall_models += models
 
                 cur_oct = calculate_oct(order)
-                assert cur_oct == opt_value
                 if cur_oct < min_oct:
                     min_oct = cur_oct
                     min_order = order
 
-    return min_oct, min_order, overall_rules, overall_models
+    return min_order, overall_rules, overall_models

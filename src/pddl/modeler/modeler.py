@@ -47,6 +47,9 @@ f'''(define (problem ProductOrdering-{problemname})
             result += f'    (available p{product})\n'
         for product1 in edge_weights:
             for product2 in edge_weights[product1]:
+                result += f'    (changeover p{product1} p{product2})\n'
+        for product1 in edge_weights:
+            for product2 in edge_weights[product1]:
                 distance = edge_weights[product1][product2]
                 result += f'    (= (changeover-time p{product1} p{product2}) {distance})\n'
         result += \

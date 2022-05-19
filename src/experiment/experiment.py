@@ -8,13 +8,13 @@ Ordering problem. These approaches are:
     combination of start and end product
 - Using the ILP approach
 """
-import sys
+from typing import Set
+import logging
 import math
+import random
 import time
 import os
-from typing import Set
-import random
-import logging
+import sys
 from joblib import Parallel, delayed
 import pandas as pd
 from approaches.tsp import run_tsp_encoding
@@ -22,9 +22,11 @@ from approaches.asp import run_asp
 from approaches.bad import run_bad_encoding
 from approaches.seq import run_seq_encoding
 from approaches.ilp import run_ilp
-from utils import calculate_oct
+from utils import setup_logger, calculate_oct
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from constants.constants import CHANGEOVER_MATRIX, PROJECT_FOLDER, RESULTS_FILE
+
+LOGGER = logging.getLogger('experiment')
 
 def select_random_set_of_product(sample_size : int, run : int) -> Set[str]:
     """Auxiliary function for selecting a random set of n products out of all products in the
@@ -56,9 +58,11 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         run (int): id of run
         encoding (str): encoding
     """
-    logging.info('run_experiment(%s, %s, %s)', sample_size, run, encoding)
+    setup_logger()
+
+    LOGGER.info('run_experiment(%s, %s, %s) started', sample_size, run, encoding)
     products = select_random_set_of_product(sample_size, run)
-    logging.debug('product samples: %s', str(products))
+    LOGGER.debug('product samples: %s', str(products))
 
     result = {'Time': math.nan, 'OptValue': math.nan, 'C': math.nan, 'GroundRules': math.nan,
               'Models': math.nan, 'Variables': math.nan, 'Constraints': math.nan}
@@ -89,24 +93,24 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
         result['GroundRules'] = rules
         result['Models'] = models
 
     if encoding == 'seq':
         temp = time.time()
-        opt_value, order, rules, models = run_seq_encoding(products, run)
+        order, rules, models = run_seq_encoding(products, run)
         temp = time.time() - temp
         result['Time'] = temp
-        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
         result['GroundRules'] = rules
         result['Models'] = models
 
     if encoding == 'ilp':
         temp = time.time()
-        opt_value, order, num_variables, num_constraints = run_ilp(products)
+        order, num_variables, num_constraints = run_ilp(products)
         temp = time.time() - temp
         result['Time'] = temp
-        result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
         result['Variables'] = num_variables
         result['Constraints'] = num_constraints
@@ -115,10 +119,13 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         filehandle.write(f'{sample_size},{run},{encoding},{result["Time"]},' + \
             f'{result["OptValue"]},{result["C"]},{result["GroundRules"]},'+ \
             f'{result["Variables"]},{result["Constraints"]}\n')
+    
+    LOGGER.info('run_experiment(%s, %s, %s) ended', sample_size, run, encoding)
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    setup_logger()
 
+    # List of encodings
     encodings = [
         'tsp',
         'asp',
@@ -139,8 +146,8 @@ if __name__ == '__main__':
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
 
-    numProducts = [24] # list(range(10, 50, 4)) # [4, 8, 12, 16, 20, 24]
-    runs = [0] # list(range(3))
+    numProducts = list(range(6, 10, 2)) # [4, 8, 12, 16, 20, 24]
+    runs = list(range(3))
 
     Parallel(n_jobs = -1)(delayed(run_experiment)(n, run, encoding) \
         for n in numProducts \

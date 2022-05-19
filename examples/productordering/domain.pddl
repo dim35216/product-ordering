@@ -12,7 +12,8 @@
 )
 
 (:predicates
-  (available ?x)
+  (available ?x - product)
+  (changeover ?x ?y - product)
   (processing ?x - product)
   (worked-off ?x - product)
   (initialized)
@@ -40,6 +41,7 @@
   :precondition (and
                   (available ?x)
                   (available ?y)
+                  (changeover ?x ?y)
                   (not (worked-off ?x))
                   (processing ?x)
                   (not (worked-off ?y))

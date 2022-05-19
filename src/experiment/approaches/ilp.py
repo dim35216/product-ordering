@@ -10,7 +10,9 @@ from ortools.linear_solver import pywraplp
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from constants.constants import PROJECT_FOLDER
 sys.path.append(PROJECT_FOLDER)
-from src.experiment.utils import build_graph
+from src.experiment.utils import calculate_oct, build_graph
+
+LOGGER = logging.getLogger('experiment')
 
 def create_model(edge_weights : Dict[str, Dict[str, int]], start : str = 'start', \
     end : str = 'end') -> Tuple[pywraplp.Solver, Dict[str, Dict[str, pywraplp.Variable]]]:
@@ -43,22 +45,14 @@ def create_model(edge_weights : Dict[str, Dict[str, int]], start : str = 'start'
             delta_minus[product2].append(var)
 
     for product in edge_weights:
-        if product != end:
-            constraint = solver.RowConstraint(1, 1, f'flow_conservation_plus_{product}')
-            for var in delta_plus[product]:
-                constraint.SetCoefficient(var, 1)
-    constraint = solver.RowConstraint(0, 0, f'flow_conservation_plus_end_{product}')
-    for var in delta_plus[end]:
-        constraint.SetCoefficient(var, 1)
+        constraint = solver.RowConstraint(1, 1, f'sum_outgoing_{product}')
+        for var in delta_plus[product]:
+            constraint.SetCoefficient(var, 1)
 
     for product in edge_weights:
-        if product != start:
-            constraint = solver.RowConstraint(1, 1, f'flow_conservation_minus_{product}')
-            for var in delta_minus[product]:
-                constraint.SetCoefficient(var, 1)
-    constraint = solver.RowConstraint(0, 0, f'flow_conservation_minus_start_{product}')
-    for var in delta_minus[start]:
-        constraint.SetCoefficient(var, 1)
+        constraint = solver.RowConstraint(1, 1, f'sum_ingoing_{product}')
+        for var in delta_minus[product]:
+            constraint.SetCoefficient(var, 1)
 
     for subset in chain.from_iterable(combinations(list(edge_weights.keys()), r) \
         for r in range(2, len(edge_weights.keys()))):
@@ -86,26 +80,29 @@ def _print_variables(variables : Dict[str, Dict[str, pywraplp.Variable]]) -> Non
     """
     for product1, values in variables.items():
         for product2, var in values.items():
-            logging.debug('x[%s][%s] = %s', product1, product2, var.SolutionValue())
+            LOGGER.debug('x[%s][%s] = %s', product1, product2, var.SolutionValue())
 
-def extract_order(variables : Dict[str, Dict[str, pywraplp.Variable]], start : str = 'start', \
-    end : str = 'end') -> List[str]:
+def extract_order(variables : Dict[str, Dict[str, pywraplp.Variable]]) -> List[str]:
     """Analyzing the solution values of the ILP model's variables for extracting the order of
     products
 
     Args:
         variables (Dict[str, Dict[str, pywraplp.Variable]]): dictionary of all variables
-        start (str): start product. Defaults to 'start'.
-        end (str): end product. Defaults to 'end'.
 
     Returns:
         List[str]: extracted order of products
     """
     _print_variables(variables)
 
-    order = [start]
-    cur_product = start
-    while cur_product != end:
+    order = []
+    cur_product = 'v'
+    for product, var in variables[cur_product].items():
+        value = var.solution_value()
+        assert value in [0, 1]
+        if value == 1:
+            cur_product = product
+            order.append(product)
+    while cur_product != 'v':
         for product, var in variables[cur_product].items():
             value = var.solution_value()
             assert value in [0, 1]
@@ -113,12 +110,8 @@ def extract_order(variables : Dict[str, Dict[str, pywraplp.Variable]], start : s
                 cur_product = product
                 order.append(product)
 
-    if 'start' in order:
-        assert order[0] == 'start'
-        order = order[1:]
-    if 'end' in order:
-        assert order[-1] == 'end'
-        order = order[:-1]
+    assert len(order) > 0
+    order = order[:-1]
 
     return order
 
@@ -132,22 +125,23 @@ def run_ilp(products : Set[str]) -> Tuple[int, List[str], int, int]:
         Tuple[int, List[str], int, int]: minimal overall changeover time, optimal product order, \
             number of variables, number of constraints
     """
-    edge_weights = build_graph(products)
+    edge_weights = build_graph(products, cyclic=True)
     solver, variables = create_model(edge_weights)
 
     status = solver.Solve()
-    logging.debug('Solution status: %s', status)
+    LOGGER.debug('Solution status: %s', status)
 
     if status != pywraplp.Solver.OPTIMAL:
-        logging.error('The problem does not have an optimal solution.')
+        LOGGER.info('The problem does not have an optimal solution.')
         return -1, [], -1, -1
 
-    opt_value = solver.Objective().Value()
-    logging.debug('Objective value = %s', str(opt_value))
-
     order = extract_order(variables)
+
+    opt_value = solver.Objective().Value()
+    assert opt_value == calculate_oct(order)
+    LOGGER.debug('Objective value = %s', str(opt_value))
 
     num_variables = solver.NumVariables()
     num_constraints = solver.NumConstraints()
 
-    return opt_value, order, num_variables, num_constraints
+    return order, num_variables, num_constraints

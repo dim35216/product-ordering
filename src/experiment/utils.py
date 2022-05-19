@@ -1,11 +1,27 @@
 """Collection of auxiliary functions for conducting a computational experiment
 """
 from typing import List, Dict, Union, Set
+import logging
 import os
 import sys
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from constants.constants import CHANGEOVER_MATRIX
+
+def setup_logger() -> None:
+    """Auxiliary method for getting a logger, which even works in the parallelized joblib
+    environment
+    """
+    logger = logging.getLogger('experiment')
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(message)s ' + \
+        '[in %(pathname)s:%(lineno)d]')
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    logger.addHandler(handler)
+    logger.propagate = False
 
 def calculate_oct(order: List[str], occurences : Union[Dict[str, int], None] = None) -> int:
     """Calculate the overall changeover time for a given product order and the changeover matrix

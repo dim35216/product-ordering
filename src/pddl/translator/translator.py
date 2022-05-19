@@ -150,7 +150,11 @@ class Translator:
                         pi.append(f', {repr_fluent(effect[2], time_term="T", add_list=["V2"])}, V = V1 + V2.\n')
                     else:
                         pi.append(f', {repr_fluent(effect[2], add_list=["V2"])}, V = V1 + V2.\n')
-                    pi.append(f'{repr_fluent(effect[1], time_term="T", add_list=["V"], strong_negation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {repr_fluent(effect[1], time_term="T - 1", add_list=["V"])}.\n')
+                    pi.append(f'{repr_fluent(effect[1], time_term="T", add_list=["V1"], strong_negation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {repr_fluent(effect[1], time_term="T - 1", add_list=["V1"])}')
+                    if effect[2][0] in fluents_in_effects:
+                        pi.append(f', {repr_fluent(effect[2], time_term="T", add_list=["V2"])}, V2 != 0.\n')
+                    else:
+                        pi.append(f', {repr_fluent(effect[2], add_list=["V2"])}, V2 != 0.\n')
 
                 elif effect[0] == 'assign':
                     pi.append(f'{repr_fluent(effect[1], time_term = "T", add_list=["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, V = {effect[2]}.\n')
