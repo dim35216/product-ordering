@@ -27,13 +27,13 @@ def create_model(edge_weights : Dict[str, Dict[str, int]]) -> Tuple[Model, \
     """
     model = Model('product-ordering')
 
-    delta_plus = {}
-    delta_minus = {}
+    delta_plus : Dict[str, List[Var]] = {}
+    delta_minus : Dict[str, List[Var]] = {}
     for product in edge_weights:
         delta_plus[product] = []
         delta_minus[product] = []
 
-    variables = {}
+    variables : Dict[str, Dict[str, Var]] = {}
     for product1 in edge_weights:
         variables[product1] = {}
         for product2 in edge_weights[product1]:
