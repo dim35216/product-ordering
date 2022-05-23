@@ -14,11 +14,7 @@ class Parser:
     into a domain file and a problem file
     """
 
-    SUPPORTED_REQUIREMENTS = [':strips', ':negative-preconditions', ':typing', ':adl',
-                              ':preferences', ':disjunctive-preconditions', ':equality',
-                              ':numeric-fluents']
-    SUPPORTED_SUPER_REQUIREMENTS = {':adl': [':strips', ':typing' , ':disjunctive-preconditions',
-                                    ':equality', ':quantified-preconditions', ':condition-effects']}
+    SUPPORTED_REQUIREMENTS = [':strips', ':typing', ':preferences', ':numeric-fluents']
 
     def __init__(self, domain : str, problem : str) -> None:
         """Constructor of PDDL parser
@@ -69,11 +65,8 @@ class Parser:
             elif token == ':requirements':
                 group = set(group)
                 for req in group:
-                    if req in self.SUPPORTED_SUPER_REQUIREMENTS:
-                        self.requirements.update(self.SUPPORTED_SUPER_REQUIREMENTS[req])
                     if not req in self.SUPPORTED_REQUIREMENTS:
                         raise Exception('Requirement ' + req + ' not supported')
-                group.difference_update(self.SUPPORTED_SUPER_REQUIREMENTS)
                 self.requirements.update(group)
 
             elif token == ':constants':
