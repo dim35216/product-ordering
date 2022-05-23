@@ -33,18 +33,19 @@ f'''(define (problem ProductOrdering-{problemname})
 
 (:goal
     (and
-        (complete)
+        (finalized)
 '''
         for product in edge_weights:
-            result += f'        (worked-off p{product})\n'
+            result += f'        (processed p{product})\n'
         result += \
 '''    )
 )
 
 (:init
+    (not-initialized)
 '''
         for product in edge_weights:
-            result += f'    (available p{product})\n'
+            result += f'    (to-be-processed p{product})\n'
         for product1 in edge_weights:
             for product2 in edge_weights[product1]:
                 result += f'    (changeover p{product1} p{product2})\n'
