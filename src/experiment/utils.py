@@ -266,7 +266,7 @@ class ModelHelper():
         def __init__(self):
             self.symbols = None
             self.satisfiable = False
-            self.optimal
+            self.optimal = False
 
         def on_model(self, model : clingo.Model):
             self.symbols = model.symbols(shown=True)
