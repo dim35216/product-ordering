@@ -1,7 +1,7 @@
 """Approach for solving the Product Ordering approach:
 Interpretation of problem instance as TSP and usage of the concorde tsp solver
 """
-from typing import Set, List, Union
+from typing import Set, List, Union, Tuple
 import logging
 import subprocess
 import os
@@ -14,7 +14,7 @@ from src.experiment.utils import build_graph, create_tsp_instance, interpret_tsp
 LOGGER = logging.getLogger('experiment')
 
 def run_concorde(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> List[str]:
+    end : Union[str, None] = None) -> Tuple[List[str], bool]:
     """Computing the Product Ordering problem using the concorde tsp solver. Therefore it's
     necessary to transform the asymmetric problem instance to a symmetric one, and save the
     instance in the tsplib95 format.
@@ -26,7 +26,7 @@ def run_concorde(products : Set[str], run : int, start : Union[str, None] = None
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        List[str]: optimal product order
+        Tuple[List[str], bool]: optimal product order, flag for timeout occurred
     """
     edge_weights = build_graph(products, start, end, cyclic=True)
     sym_edge_weights = transform_symmetric(edge_weights)
@@ -45,9 +45,9 @@ def run_concorde(products : Set[str], run : int, start : Union[str, None] = None
         subprocess.run(args, capture_output=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         LOGGER.info('The time limit is exceeded.')
-        return []
+        return [], True
 
     assert os.path.exists(filename_sol)
     order = interpret_tsp_solution(filename_sol, products_list)
     
-    return order
+    return order, False

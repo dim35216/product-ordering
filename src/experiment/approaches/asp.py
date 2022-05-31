@@ -68,7 +68,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
     return order
 
 def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
+    end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the Answer Set Planning
     approach; first, the problem is understood as a classical planning problem with preferences
     and this is encoded in the planning problem description language PDDL; the PDDL instance is
@@ -82,8 +82,8 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], int, int]: minimal overall changeover time, optimal product order, \
-            number of ground rules, number of calculated models
+        Tuple[int, List[str], int, int, bool]: minimal overall changeover time, optimal product \
+            order, number of ground rules, number of calculated models, flag for timeout occurred
     """
     pddl_filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'asp',
         f'instance_{len(products)}_{run}.pddl')
@@ -120,13 +120,13 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
             if time.time() - start_time > TIMEOUT:
                 break
 
-    if not modelHelper.satisfiable:
-        LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1
+    if not modelHelper.exhausted:
+        LOGGER.info('The time limit is exceeded.')
+        return -1, [], -1, -1, True
 
     if not modelHelper.optimal:
-        LOGGER.info('The time limit is exceeded.')
-        return -1, [], -1, -1
+        LOGGER.info('The problem does not have an optimal solution.')
+        return -1, [], -1, -1, False
 
     order = interpret_clingo(modelHelper.symbols, timesteps)
     assert len(order) == len(products)
@@ -135,4 +135,4 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     opt_value = int(ctl.statistics['summary']['costs'][0])
     models = int(ctl.statistics['summary']['models']['enumerated'])
 
-    return opt_value, order, rules, models
+    return opt_value, order, rules, models, False

@@ -117,15 +117,15 @@ def extract_order(variables : Dict[str, Dict[str, Var]]) -> List[str]:
 
     return order
 
-def run_ilp(products : Set[str]) -> Tuple[List[str], int, int]:
+def run_ilp(products : Set[str]) -> Tuple[List[str], int, int, bool]:
     """Computing the Product Ordering problem as an ILP using Google OR-Tools
 
     Args:
         products (Set[str]): set of products
 
     Returns:
-        Tuple[List[str], int, int]: minimal overall changeover time, optimal product order, \
-            number of variables, number of constraints
+        Tuple[List[str], int, int, bool]: minimal overall changeover time, optimal product order, \
+            number of variables, number of constraints, flag for timeout occurred
     """
     edge_weights = build_graph(products, cyclic=True)
     model, variables = create_model(edge_weights)
@@ -136,7 +136,7 @@ def run_ilp(products : Set[str]) -> Tuple[List[str], int, int]:
 
     if solve_solution is None:
         LOGGER.info('The problem does not have an optimal solution ot the time limit is exceeded.')
-        return [], -1, -1
+        return [], -1, -1, True
 
     order = extract_order(variables)
 
@@ -147,4 +147,4 @@ def run_ilp(products : Set[str]) -> Tuple[List[str], int, int]:
     num_variables = model.number_of_variables
     num_constraints = model.number_of_constraints
 
-    return order, num_variables, num_constraints
+    return order, num_variables, num_constraints, False

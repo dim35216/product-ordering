@@ -265,12 +265,12 @@ def transform_symmetric(edge_weights : Dict[str, Dict[str, int]]) -> Dict[str, D
 class ModelHelper():
         def __init__(self):
             self.symbols = None
-            self.satisfiable = False
+            self.exhausted = False
             self.optimal = False
 
         def on_model(self, model : clingo.Model):
             self.symbols = model.symbols(shown=True)
 
         def on_finish(self, solve_result : clingo.SolveResult):
-            self.satisfiable = solve_result.satisfiable
+            self.exhausted = solve_result.exhausted
             self.optimal = solve_result.satisfiable and solve_result.exhausted

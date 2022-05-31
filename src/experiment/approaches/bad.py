@@ -16,7 +16,7 @@ from src.experiment.utils import build_graph, create_lp_instance, ModelHelper
 LOGGER = logging.getLogger('experiment')
 
 def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
+    end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the bad TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -28,8 +28,8 @@ def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = 
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], int, int]: objective value, optimal product order, number of ground \
-            rules, number of calculated models
+        Tuple[int, List[str], int, int, bool]: objective value, optimal product order, number of \
+            ground rules, number of calculated models, flag for timeout occurred
     """
     edge_weights = build_graph(products, start, end, cyclic=True)
     instance = create_lp_instance(edge_weights)
@@ -53,13 +53,13 @@ def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = 
             if time.time() - start_time > TIMEOUT:
                 break
 
-    if not modelHelper.satisfiable:
-        LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1
+    if not modelHelper.exhausted:
+        LOGGER.info('The time limit is exceeded.')
+        return -1, [], -1, -1, True
 
     if not modelHelper.optimal:
-        LOGGER.info('The time limit is exceeded.')
-        return -1, [], -1, -1
+        LOGGER.info('The problem does not have an optimal solution.')
+        return -1, [], -1, -1, False
 
     order = interpret_clingo(modelHelper.symbols)
     assert len(order) == len(products)
@@ -68,4 +68,4 @@ def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = 
     opt_value = int(ctl.statistics['summary']['costs'][0])
     models = int(ctl.statistics['summary']['models']['enumerated'])
 
-    return opt_value, order, rules, models
+    return opt_value, order, rules, models, False

@@ -15,7 +15,7 @@ from src.experiment.utils import calculate_oct, build_graph, create_lp_instance,
 
 LOGGER = logging.getLogger('experiment')
 
-def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, int]:
+def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding,
     but the start and end product is specified explicitly; as a consequence, the solver runs O(n^2)
     times; in each run, the Product Ordering problem instance has to transformed into a TSP
@@ -28,8 +28,8 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, in
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[List[str], int, int]: optimal product order, number of ground rules, number of \
-            calculated models
+        Tuple[List[str], int, int, bool]: optimal product order, number of ground rules, number \
+            of calculated models, flag for timeout occurred
     """
     overall_rules = 0
     overall_models = 0
@@ -60,13 +60,13 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, in
                         if time.time() - start_time > TIMEOUT:
                             break
 
-                if not modelHelper.satisfiable:
-                    LOGGER.info('The problem does not have an optimal solution.')
-                    return [], -1, -1
+                if not modelHelper.exhausted:
+                    LOGGER.info('The time limit is exceeded.')
+                    return [], -1, -1, True
 
                 if not modelHelper.optimal:
-                    LOGGER.info('The time limit is exceeded.')
-                    return [], -1, -1
+                    LOGGER.info('The problem does not have an optimal solution.')
+                    return [], -1, -1, False
 
                 order = interpret_clingo(modelHelper.symbols)
                 assert len(order) == len(products)
@@ -82,4 +82,4 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, in
                     min_oct = cur_oct
                     min_order = order
 
-    return min_order, overall_rules, overall_models
+    return min_order, overall_rules, overall_models, False

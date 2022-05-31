@@ -8,7 +8,7 @@ Ordering problem. These approaches are:
     combination of start and end product
 - Using the ILP approach
 """
-from typing import Set
+from typing import Set, Dict
 import logging
 import math
 import random
@@ -28,6 +28,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from constants.constants import CHANGEOVER_MATRIX, PROJECT_FOLDER, RESULTS_FILE
 
 LOGGER = logging.getLogger('experiment')
+
+# Dict of flags for timeouts occurred
+timeouts : Dict[str, Dict[int, bool]] = {}
 
 def select_random_set_of_product(sample_size : int, run : int) -> Set[str]:
     """Auxiliary function for selecting a random set of n products out of all products in the
@@ -65,68 +68,96 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
     products = select_random_set_of_product(sample_size, run)
     LOGGER.debug('product samples: %s', str(products))
 
-    result = {'Time': math.nan, 'OptValue': math.nan, 'C': math.nan, 'GroundRules': math.nan,
-              'Models': math.nan, 'Variables': math.nan, 'Constraints': math.nan}
+    result = {
+        'Time': math.nan,
+        'OptValue': math.nan,
+        'C': math.nan,
+        'GroundRules': math.nan,
+        'Models': math.nan,
+        'Variables': math.nan,
+        'Constraints': math.nan,
+        'Timeout': False
+    }
 
     if encoding == 'tsp':
         temp = time.time()
-        opt_value, order, rules, models = run_tsp_encoding(products, run)
+        opt_value, order, rules, models, timeout = run_tsp_encoding(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
         result['GroundRules'] = rules
         result['Models'] = models
+        result['Timeout'] = timeout
 
-    if encoding == 'concorde':
+    elif encoding == 'concorde':
         temp = time.time()
-        order = run_concorde(products, run)
+        order, timeout = run_concorde(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['C'] = calculate_oct(order)
+        result['Timeout'] = timeout
 
-    if encoding == 'asp':
+    elif encoding == 'asp':
         temp = time.time()
-        opt_value, order, rules, models = run_asp(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['OptValue'] = opt_value
-        result['C'] = calculate_oct(order)
-        result['GroundRules'] = rules
-        result['Models'] = models
-
-    if encoding == 'bad':
-        temp = time.time()
-        opt_value, order, rules, models = run_bad_encoding(products, run)
+        opt_value, order, rules, models, timeout = run_asp(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
         result['GroundRules'] = rules
         result['Models'] = models
+        result['Timeout'] = timeout
 
-    if encoding == 'seq':
+    elif encoding == 'bad':
         temp = time.time()
-        order, rules, models = run_seq_encoding(products, run)
+        opt_value, order, rules, models, timeout = run_bad_encoding(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
+        result['GroundRules'] = rules
+        result['Models'] = models
+        result['Timeout'] = timeout
+
+    elif encoding == 'seq':
+        temp = time.time()
+        order, rules, models, timeout = run_seq_encoding(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['C'] = calculate_oct(order)
         result['GroundRules'] = rules
         result['Models'] = models
+        result['Timeout'] = timeout
 
-    if encoding == 'ilp':
+    elif encoding == 'ilp':
         temp = time.time()
-        order, num_variables, num_constraints = run_ilp(products)
+        order, num_variables, num_constraints, timeout = run_ilp(products)
         temp = time.time() - temp
         result['Time'] = temp
         result['C'] = calculate_oct(order)
         result['Variables'] = num_variables
         result['Constraints'] = num_constraints
+        result['Timeout'] = timeout
+
+    else:
+        LOGGER.info('Encoding %s is unknown', encoding)
+
+    timeouts[encoding][n] = timeouts[encoding][n] and result['Timeout']
 
     with open(RESULTS_FILE, 'a', encoding='utf-8') as filehandle:
-        filehandle.write(f'{sample_size},{run},{encoding},{result["Time"]},' + \
-            f'{result["OptValue"]},{result["C"]},{result["GroundRules"]},'+ \
-            f'{result["Variables"]},{result["Constraints"]}\n')
+        filehandle.write('{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}\n'.format(
+            sample_size,
+            run,
+            encoding,
+            result['Time'],
+            result['OptValue'],
+            result['C'],
+            result['GroundRules'],
+            result['Variables'],
+            result['Constraints'],
+            result['Timeout'])
+        )
     
     LOGGER.info('run_experiment(%s, %s, %s) ended', sample_size, run, encoding)
 
@@ -135,12 +166,12 @@ if __name__ == '__main__':
 
     # List of encodings
     encodings = [
-        'tsp',
-        'concorde'
-#         'asp',
-#         'bad',
-#         'seq',
-#         'ilp'
+        # 'tsp',
+        # 'concorde',
+        'asp',
+        # 'bad',
+        # 'seq',
+        # 'ilp'
     ]
 
     # Make and clean instances folders
@@ -155,11 +186,16 @@ if __name__ == '__main__':
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
 
-    numProducts = list(range(6, 20, 2)) # [4, 8, 12, 16, 20, 24]
+    numProducts = list(range(6, 30, 4)) # [4, 8, 12, 16, 20, 24]
     runs = list(range(3))
 
-    Parallel(n_jobs = -1)(delayed(run_experiment)(n, run, encoding) \
-        for n in numProducts \
-        for run in runs \
-        for encoding in encodings \
-    )
+    for encoding in encodings:
+        timeouts[encoding] = {}
+        for n in numProducts:
+            timeouts[encoding][n] = True
+            Parallel(n_jobs=-1, require='sharedmem')(delayed(run_experiment)(n, run, encoding) \
+                for run in runs)
+            if timeouts[encoding][n]:
+                LOGGER.info('All %d runs for encoding %s exceeded the time limit; the sample ' + \
+                    'size %d won\'t be increased anymore', len(runs), encoding, n)
+                break
