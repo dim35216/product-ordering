@@ -135,12 +135,12 @@ if __name__ == '__main__':
 
     # List of encodings
     encodings = [
-        # 'tsp',
-        'concorde',
-        # 'asp',
-        # 'bad',
-        # 'seq',
-        # 'ilp'
+        'tsp',
+        'concorde'
+#         'asp',
+#         'bad',
+#         'seq',
+#         'ilp'
     ]
 
     # Make and clean instances folders
@@ -155,8 +155,8 @@ if __name__ == '__main__':
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
 
-    numProducts = [2] # list(range(6, 10, 2)) # [4, 8, 12, 16, 20, 24]
-    runs = list(range(1))
+    numProducts = list(range(6, 20, 2)) # [4, 8, 12, 16, 20, 24]
+    runs = list(range(3))
 
     Parallel(n_jobs = -1)(delayed(run_experiment)(n, run, encoding) \
         for n in numProducts \

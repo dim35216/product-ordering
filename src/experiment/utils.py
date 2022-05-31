@@ -153,8 +153,8 @@ def create_tsp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
         for product2, value in edge_weights[product1].items():
             matrix[index_products[product1]][index_products[product2]] = value
     
-    problem = tsplib95.models.StandardProblem(name='Test',
-        type='ATSP',
+    problem = tsplib95.models.StandardProblem(
+        type='TSP',
         edge_weight_type='EXPLICIT',
         edge_weight_format='FULL_MATRIX',
         dimension=len(edge_weights),
