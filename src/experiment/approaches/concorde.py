@@ -1,11 +1,9 @@
 """Approach for solving the Product Ordering approach:
 Interpretation of problem instance as TSP and usage of the concorde tsp solver
 """
-from typing import Set, List, Tuple, Union
+from typing import Set, List, Union
 import logging
-import re
 import subprocess
-import tsplib95
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))

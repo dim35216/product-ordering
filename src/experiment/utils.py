@@ -5,6 +5,7 @@ import logging
 import tsplib95
 import os
 import sys
+import clingo
 import pandas as pd
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -260,3 +261,16 @@ def transform_symmetric(edge_weights : Dict[str, Dict[str, int]]) -> Dict[str, D
             sym_edge_weights[product1 + '_v'][product1] = 0
 
     return sym_edge_weights
+
+class ModelHelper():
+        def __init__(self):
+            self.symbols = None
+            self.satisfiable = False
+            self.optimal
+
+        def on_model(self, model : clingo.Model):
+            self.symbols = model.symbols(shown=True)
+
+        def on_finish(self, solve_result : clingo.SolveResult):
+            self.satisfiable = solve_result.satisfiable
+            self.optimal = solve_result.satisfiable and solve_result.exhausted

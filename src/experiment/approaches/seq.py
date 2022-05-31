@@ -3,6 +3,7 @@ Interpretation of problem instance as TSP and usage of sequential encoding
 """
 from typing import Set, Tuple, List
 import logging
+import time
 import os
 import sys
 import clingo
@@ -10,7 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from constants.constants import TSP_ENCODING, PROJECT_FOLDER, TIMEOUT
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
 from src.experiment.approaches.tsp import interpret_clingo
-from src.experiment.utils import calculate_oct, build_graph, create_lp_instance
+from src.experiment.utils import calculate_oct, build_graph, create_lp_instance, ModelHelper
 
 LOGGER = logging.getLogger('experiment')
 
@@ -34,6 +35,7 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, in
     overall_models = 0
     min_oct = 10080
     min_order = []
+    start_time = time.time()
     for product1 in products:
         for product2 in products:
             if product1 != product2:
@@ -49,17 +51,24 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, in
                 ctl.load(TSP_ENCODING)
                 ctl.add('base', [], instance)
                 ctl.ground([('base', [])])
-                with ctl.solve(yield_=True) as solve_handle: # type: ignore
-                    if not solve_handle.wait(TIMEOUT / (len(products) * (len(products) - 1) / 2)):
-                        LOGGER.info('The time limit is exceeded.')
-                        return [], -1, -1
-                    model = None
-                    for model in solve_handle:
-                        pass
-                    if model is None:
-                        LOGGER.info('The problem does not have an optimal solution.')
-                        return [], -1, -1
-                order = interpret_clingo(model.symbols(shown=True))
+
+                modelHelper = ModelHelper()
+                solve_handle : clingo.SolveHandle
+                with ctl.solve(on_model=modelHelper.on_model, on_finish=modelHelper.on_finish,
+                    async_=True) as solve_handle: # type: ignore
+                    while not solve_handle.wait(timeout=10.0):
+                        if time.time() - start_time > TIMEOUT:
+                            break
+
+                if not modelHelper.satisfiable:
+                    LOGGER.info('The problem does not have an optimal solution.')
+                    return [], -1, -1
+
+                if not modelHelper.optimal:
+                    LOGGER.info('The time limit is exceeded.')
+                    return [], -1, -1
+
+                order = interpret_clingo(modelHelper.symbols)
                 assert len(order) == len(products)
 
                 rules = int(ctl.statistics['problem']['lp']['rules'])
