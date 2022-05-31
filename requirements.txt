@@ -1,5 +1,4 @@
 joblib==1.1.0
 clingo==5.5.2
-ortools==9.3.10497
 docplex==2.23.222
 tsplib95==0.7.1

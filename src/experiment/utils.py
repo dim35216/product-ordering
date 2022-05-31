@@ -1,6 +1,6 @@
 """Collection of auxiliary functions for conducting a computational experiment
 """
-from typing import List, Dict, Union, Set
+from typing import List, Dict, Union, Set, Tuple
 import logging
 import tsplib95
 import os
@@ -118,11 +118,13 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     return edge_weights
 
 def create_lp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
-    """Modelling an Product Ordering problem instance as a logic program in Answer Set Programming
+    """Modelling a Product Ordering problem instance as a logic program in Answer Set Programming
 
     Args:
         edge_weights (Dict[str, Dict[str, int]]): model of graph of problem instance
-        filename (str): file to resulting LP instance file
+
+    Returns:
+        str: resulting LP source code
     """
     result : str = ''
     for product in edge_weights:
@@ -136,12 +138,16 @@ def create_lp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
 
     return result
 
-def create_tsp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
-    """Modelling an Product Ordering problem instance as a logic program in Answer Set Programming
+def create_tsp_instance(edge_weights : Dict[str, Dict[str, int]]) -> \
+    Tuple[tsplib95.models.StandardProblem, List[str]]:
+    """Creating a Product Ordering problem instance in the tsplib95 format
 
     Args:
         edge_weights (Dict[str, Dict[str, int]]): model of graph of problem instance
-        filename (str): file to resulting LP instance file
+
+    Returns:
+        Tuple[tsplib95.models.StandardProblem, List[str]]: tsp problem instance in the tsplib95 \
+            format, products in fixed listed order used in the problem instance
     """
     matrix = np.ones((len(edge_weights), len(edge_weights)), dtype=int) * 99999
 
@@ -164,6 +170,15 @@ def create_tsp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
     return problem, products_list
 
 def interpret_tsp_solution(filename : str, products_list : List[str]) -> List[str]:
+    """Interpreting the solution file of the concorde tsp solver in the tsplib95 format
+
+    Args:
+        filename (str): solution file
+        products_list (List[str]): products in fixed listed order used in the problem instance
+
+    Returns:
+        List[str]: optimal product order
+    """
     index_list = []
     with open(filename, 'r', encoding='UTF-8') as filehandle:
         lines = filehandle.readlines()
@@ -204,7 +219,16 @@ def interpret_tsp_solution(filename : str, products_list : List[str]) -> List[st
     return order
 
 def transform_symmetric(edge_weights : Dict[str, Dict[str, int]]) -> Dict[str, Dict[str, int]]:
-    sym_edge_weights = {}
+    """Transforming an asymmetric graph instance into a symmetric one. Herby, the procedure is used
+    in reference to the article https://home.engineering.iastate.edu/~rkumar/PUBS/atsp.pdf
+
+    Args:
+        edge_weights (Dict[str, Dict[str, int]]): model of asymmetric graph
+
+    Returns:
+        Dict[str, Dict[str, int]]: model of symmetric graph
+    """
+    sym_edge_weights : Dict[str, Dict[str, int]] = {}
     for product in edge_weights:
         sym_edge_weights[product] = {}
     for product in edge_weights:

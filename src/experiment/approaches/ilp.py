@@ -9,7 +9,7 @@ import sys
 from docplex.mp.model import Model
 from docplex.mp.dvar import Var
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import PROJECT_FOLDER
+from constants.constants import PROJECT_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import calculate_oct, build_graph
 
@@ -130,11 +130,12 @@ def run_ilp(products : Set[str]) -> Tuple[List[str], int, int]:
     edge_weights = build_graph(products, cyclic=True)
     model, variables = create_model(edge_weights)
 
+    model.set_time_limit(TIMEOUT)
     solve_solution = model.solve()
     LOGGER.debug('Solution status: %s', solve_solution)
 
     if solve_solution is None:
-        LOGGER.info('The problem does not have an optimal solution.')
+        LOGGER.info('The problem does not have an optimal solution ot the time limit is exceeded.')
         return [], -1, -1
 
     order = extract_order(variables)

@@ -8,7 +8,7 @@ import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import TSP_ENCODING, PROJECT_FOLDER
+from constants.constants import TSP_ENCODING, PROJECT_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import build_graph, create_lp_instance
 
@@ -89,14 +89,16 @@ def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = 
     ctl.load(TSP_ENCODING)
     ctl.add('base', [], instance)
     ctl.ground([('base', [])])
-    solve_handle = ctl.solve(yield_=True)
-    assert isinstance(solve_handle, clingo.SolveHandle)
-    model = None
-    for model in solve_handle:
-        pass
-    if model is None:
-        LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1
+    with ctl.solve(yield_=True) as solve_handle: # type: ignore
+        if not solve_handle.wait(TIMEOUT):
+            LOGGER.info('The time limit is exceeded.')
+            return -1, [], -1, -1
+        model = None
+        for model in solve_handle:
+            pass
+        if model is None:
+            LOGGER.info('The problem does not have an optimal solution.')
+            return -1, [], -1, -1
     order = interpret_clingo(model.symbols(shown=True))
     assert len(order) == len(products)
 
