@@ -14,5 +14,8 @@ DOMAIN_PDDL = os.path.join(PROJECT_FOLDER, 'examples', 'productordering', 'domai
 # Results file of computational experiment
 RESULTS_FILE = os.path.join(PROJECT_FOLDER, 'experiments', 'results.csv')
 
+# Additional executables
+CONCORDE_EXE = os.path.join(PROJECT_FOLDER, 'include', 'concorde-bin')
+
 # Timeout per experiment in seconds
 TIMEOUT = 600.0

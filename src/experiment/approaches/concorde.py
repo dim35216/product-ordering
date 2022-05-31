@@ -1,20 +1,21 @@
 """Approach for solving the Product Ordering approach:
 Interpretation of problem instance as TSP and usage of perfect encoding
 """
-from typing import Sequence, Set, List, Tuple, Union
+from typing import Set, List, Tuple, Union
 import logging
 import re
+import subprocess
+import tsplib95
 import os
 import sys
-import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import TSP_ENCODING, PROJECT_FOLDER
+from constants.constants import CONCORDE_EXE, PROJECT_FOLDER
 sys.path.append(PROJECT_FOLDER)
-from src.experiment.utils import build_graph, create_lp_instance
+from src.experiment.utils import build_graph, create_tsp_instance, interpret_tsp_solution, transform_symmetric
 
 LOGGER = logging.getLogger('experiment')
 
-def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
+def interpret_clingo(symbols) -> List[str]:
     """Parsing the command line output of the answer set solver clingo for extracting the
     resulting order of products for the TSP encoding
 
@@ -24,9 +25,9 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
     Returns:
         List[str]: optimal product order
     """
-    pattern_cycle = re.compile(r'cycle\((\w*),(\w*)\)')
-    pattern_start = re.compile(r'cycle\(v,(\w*)\)')
-    pattern_end = re.compile(r'cycle\((\w*),v\)')
+    pattern_cycle = re.compile(r'cycle\((\d*),(\d*)\)')
+    pattern_start = re.compile(r'cycle\(v,(\d*)\)')
+    pattern_end = re.compile(r'cycle\((\d*),v\)')
 
     start = None
     end = None
@@ -61,7 +62,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
 
     return order
 
-def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
+def run_concorde(products : Set[str], run : int, start : Union[str, None] = None, \
     end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
@@ -78,30 +79,21 @@ def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = 
             rules, number of calculated models
     """
     edge_weights = build_graph(products, start, end, cyclic=True)
-    instance = create_lp_instance(edge_weights)
+    sym_edge_weights = transform_symmetric(edge_weights)
+    instance, products_list = create_tsp_instance(sym_edge_weights)
 
-    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'tsp',
-        f'instance_{len(products)}_{run}.lp')
-    with open(filename, 'w') as filehandle:
-        filehandle.write(instance)
+    filename_atsp = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'concorde',
+        f'instance_{len(products)}_{run}.atsp')
 
-    ctl = clingo.Control()
-    ctl.load(TSP_ENCODING)
-    ctl.add('base', [], instance)
-    ctl.ground([('base', [])])
-    solve_handle = ctl.solve(yield_=True)
-    assert isinstance(solve_handle, clingo.SolveHandle)
-    model = None
-    for model in solve_handle:
-        pass
-    if model is None:
-        LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1
-    order = interpret_clingo(model.symbols(shown=True))
-    assert len(order) == len(products)
+    instance.save(filename_atsp)
 
-    rules = int(ctl.statistics['problem']['lp']['rules'])
-    opt_value = int(ctl.statistics['summary']['costs'][0])
-    models = int(ctl.statistics['summary']['models']['enumerated'])
+    filename_sol = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'concorde',
+        f'instance_{len(products)}_{run}.sol')
 
-    return opt_value, order, rules, models
+    args = [CONCORDE_EXE, '-f', '-x', '-o', filename_sol, filename_atsp]
+    subprocess.run(args)
+
+    assert os.path.exists(filename_sol)
+    order = interpret_tsp_solution(filename_sol, products_list)
+    
+    return order

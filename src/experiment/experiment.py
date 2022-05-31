@@ -18,6 +18,7 @@ import sys
 from joblib import Parallel, delayed
 import pandas as pd
 from approaches.tsp import run_tsp_encoding
+from approaches.concorde import run_concorde
 from approaches.asp import run_asp
 from approaches.bad import run_bad_encoding
 from approaches.seq import run_seq_encoding
@@ -77,6 +78,13 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['GroundRules'] = rules
         result['Models'] = models
 
+    if encoding == 'concorde':
+        temp = time.time()
+        order = run_concorde(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['C'] = calculate_oct(order)
+
     if encoding == 'asp':
         temp = time.time()
         opt_value, order, rules, models = run_asp(products, run)
@@ -127,11 +135,12 @@ if __name__ == '__main__':
 
     # List of encodings
     encodings = [
-        'tsp',
-        'asp',
-        'bad',
-        'seq',
-        'ilp'
+        # 'tsp',
+        'concorde',
+        # 'asp',
+        # 'bad',
+        # 'seq',
+        # 'ilp'
     ]
 
     # Make and clean instances folders
@@ -146,8 +155,8 @@ if __name__ == '__main__':
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
 
-    numProducts = list(range(6, 10, 2)) # [4, 8, 12, 16, 20, 24]
-    runs = list(range(3))
+    numProducts = [2] # list(range(6, 10, 2)) # [4, 8, 12, 16, 20, 24]
+    runs = list(range(1))
 
     Parallel(n_jobs = -1)(delayed(run_experiment)(n, run, encoding) \
         for n in numProducts \

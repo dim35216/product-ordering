@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from constants.constants import BAD_ENCODING, PROJECT_FOLDER
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
 from src.experiment.approaches.tsp import interpret_clingo
-from src.experiment.utils import build_graph, create_tsp_instance
+from src.experiment.utils import build_graph, create_lp_instance
 
 LOGGER = logging.getLogger('experiment')
 
@@ -31,7 +31,7 @@ def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = 
             rules, number of calculated models
     """
     edge_weights = build_graph(products, start, end, cyclic=True)
-    instance = create_tsp_instance(edge_weights)
+    instance = create_lp_instance(edge_weights)
 
     filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'bad',
         f'instance_{len(products)}_{run}.lp')

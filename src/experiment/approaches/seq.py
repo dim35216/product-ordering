@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from constants.constants import TSP_ENCODING, PROJECT_FOLDER
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
 from src.experiment.approaches.tsp import interpret_clingo
-from src.experiment.utils import calculate_oct, build_graph, create_tsp_instance
+from src.experiment.utils import calculate_oct, build_graph, create_lp_instance
 
 LOGGER = logging.getLogger('experiment')
 
@@ -38,7 +38,7 @@ def run_seq_encoding(products : Set[str], run : int) -> Tuple[List[int], int, in
         for product2 in products:
             if product1 != product2:
                 edge_weights = build_graph(products, start=product1, end=product2, cyclic=True)
-                instance = create_tsp_instance(edge_weights)
+                instance = create_lp_instance(edge_weights)
 
                 filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'tsp',
                     f'instance_{len(products)}_{run}_{product1}_{product2}.lp')
