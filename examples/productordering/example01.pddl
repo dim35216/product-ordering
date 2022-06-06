@@ -9,17 +9,8 @@
 )
 
 
-(:goal (and
-    (finalized)
-    (processed p10012)
-    (processed p10014)
-    (processed p20001)
-    (processed p50013)
-    )
-)
-
-
 (:init
+    (not-initialized)
     (to-be-processed p10012)
     (to-be-processed p10014)
     (to-be-processed p20001)
@@ -59,6 +50,16 @@
 )
 
 
-(:metric minimize (+ (overall-changeover-time)))
+(:goal (and
+    (finalized)
+    (processed p10012)
+    (processed p10014)
+    (processed p20001)
+    (processed p50013)
+    )
+)
+
+
+(:metric minimize (total-cost))
 
 )

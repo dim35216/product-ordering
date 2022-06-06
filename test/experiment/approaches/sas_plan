@@ -1,0 +1,6 @@
+(initialize p20001)
+(switch p20001 p10014)
+(switch p10014 p10012)
+(switch p10012 p50013)
+(finalize p50013)
+; cost = 17 (general cost)

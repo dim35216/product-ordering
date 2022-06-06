@@ -107,7 +107,7 @@ class Translator:
                     fluents_in_effects.add(effect[0])
                     if negated:
                         fluents_with_negated_effects.add(effect[0])
-                elif effect[0] in ['+', 'assign']:
+                elif effect[0] in ['+', 'increase', '=', 'assign']:
                     fluents_in_effects.add(effect[1][0])
                     fluents_with_negated_effects.add(effect[1][0])
 
@@ -144,7 +144,7 @@ class Translator:
                 if effect[0] in parser.predicates:
                     pi.append(f'{repr_fluent(effect, time_term="T", strong_negation=strong_negation)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}.\n')
 
-                elif effect[0] == '+':
+                elif effect[0] in ['+', 'increase']:
                     pi.append(f'{repr_fluent(effect[1], time_term="T", add_list= ["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {repr_fluent(effect[1], time_term="T - 1", add_list=["V1"])}')
                     if effect[2][0] in fluents_in_effects:
                         pi.append(f', {repr_fluent(effect[2], time_term="T", add_list=["V2"])}, V = V1 + V2.\n')
@@ -156,7 +156,7 @@ class Translator:
                     else:
                         pi.append(f', {repr_fluent(effect[2], add_list=["V2"])}, V2 != 0.\n')
 
-                elif effect[0] == 'assign':
+                elif effect[0] in ['=', 'assign']:
                     pi.append(f'{repr_fluent(effect[1], time_term = "T", add_list=["V"])}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, V = {effect[2]}.\n')
                     pi.append(f'{repr_fluent(effect[1], time_term = "T", add_list=["V"], strong_negation=True)}\t:- time(T), occ({action.repr_asp_term()}, T){action.repr_parameters()}, {repr_fluent(effect[1], time_term = "T - 1", add_list=["V"])}.\n')
 
@@ -250,24 +250,32 @@ class Translator:
             opt_goal, numeric_expression = parser.metric
             preferences = []
             negative_preferences = []
-            for term in numeric_expression[1]:
+            if len(numeric_expression) == 1:
+                term = numeric_expression
                 if term[0] in parser.numeric_fluents:
                     pi.append(f'#{opt_goal}{{ V')
                     for token in list(term)[1:]:
                         pi.append(f', {token[1:].capitalize()}')
                     pi.append(f' : {repr_fluent(term, time_term="timesteps", add_list=["V"])} }}.\n')
-                elif term[0] == '*':
-                    factors = term[1]
-                    pi.append(f'#{opt_goal}{{ {int(float(factors[0][0]))} : ')
-                    if len(factors[1]) == 1:
-                        preferences.append(factors[1][0])
-                        pi.append(factors[1][0])
-                    elif len(factors[1]) == 2:
-                        assert factors[1][0] == 'is-violated'
-                        preferences.append(factors[1][1][0])
-                        negative_preferences.append(factors[1][1][0])
-                        pi.append(f'violated_{factors[1][1][0]}')
-                    pi.append(' }.\n')
+            elif numeric_expression[0] == '+':
+                for term in numeric_expression[1]:
+                    if term[0] in parser.numeric_fluents:
+                        pi.append(f'#{opt_goal}{{ V')
+                        for token in list(term)[1:]:
+                            pi.append(f', {token[1:].capitalize()}')
+                        pi.append(f' : {repr_fluent(term, time_term="timesteps", add_list=["V"])} }}.\n')
+                    elif term[0] == '*':
+                        factors = term[1]
+                        pi.append(f'#{opt_goal}{{ {int(float(factors[0][0]))} : ')
+                        if len(factors[1]) == 1:
+                            preferences.append(factors[1][0])
+                            pi.append(factors[1][0])
+                        elif len(factors[1]) == 2:
+                            assert factors[1][0] == 'is-violated'
+                            preferences.append(factors[1][1][0])
+                            negative_preferences.append(factors[1][1][0])
+                            pi.append(f'violated_{factors[1][1][0]}')
+                        pi.append(' }.\n')
 
             if len(preferences) > 0:
                 pi.append('%% Preferences\n')
@@ -282,6 +290,13 @@ class Translator:
         pi.append('#show occ/2.\n')
 
         pi.append('\n% Initial state\n')
+
+        pi.append('%% Functions\n')
+        for function_name, function_params in parser.functions.items():
+            if function_name in fluents_in_effects:
+                pi.append(self._construct_term(function_name, list(function_params.keys()) + ['0', '0']) + '.\n')
+        if sum([functionName in fluents_in_effects for functionName in parser.functions.keys()]) == 0:
+            pi.append('% empty\n')
 
         pi.append('%% Fluents\n')
         for state in parser.state:

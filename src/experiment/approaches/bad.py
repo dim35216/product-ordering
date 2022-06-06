@@ -8,7 +8,7 @@ import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import BAD_ENCODING, PROJECT_FOLDER, TIMEOUT
+from constants.constants import BAD_ENCODING, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
 from src.experiment.approaches.tsp import interpret_clingo
 from src.experiment.utils import build_graph, create_lp_instance, ModelHelper
@@ -34,10 +34,10 @@ def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = 
     edge_weights = build_graph(products, start, end, cyclic=True)
     instance = create_lp_instance(edge_weights)
 
-    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'bad',
-        f'instance_{len(products)}_{run}.lp')
-    with open(filename, 'w') as filehandle:
-        filehandle.write(instance)
+    filename = os.path.join(INSTANCES_FOLDER, 'lp', f'instance_{len(products)}_{run}.lp')
+    if not os.path.exists(filename):
+        with open(filename, 'w') as filehandle:
+            filehandle.write(instance)
 
     ctl = clingo.Control()
     ctl.load(BAD_ENCODING)

@@ -9,7 +9,7 @@ import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import DOMAIN_PDDL, PROJECT_FOLDER, TIMEOUT
+from constants.constants import DOMAIN_PDDL, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
 from src.experiment.utils import build_graph, ModelHelper
 from src.pddl.modeler.modeler import Modeler
@@ -85,8 +85,7 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
         Tuple[int, List[str], int, int, bool]: minimal overall changeover time, optimal product \
             order, number of ground rules, number of calculated models, flag for timeout occurred
     """
-    pddl_filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'asp',
-        f'instance_{len(products)}_{run}.pddl')
+    pddl_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.pddl')
     LOGGER.debug('pddl_filename: %s', pddl_filename)
     lp_filename = f'{pddl_filename}.lp'
 
@@ -120,13 +119,13 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
             if time.time() - start_time > TIMEOUT:
                 break
 
-    if not modelHelper.exhausted:
-        LOGGER.info('The time limit is exceeded.')
-        return -1, [], -1, -1, True
+    # if not modelHelper.exhausted:
+    #     LOGGER.info('The time limit is exceeded.')
+    #     return -1, [], -1, -1, True
 
-    if not modelHelper.optimal:
-        LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1, False
+    # if not modelHelper.optimal:
+    #     LOGGER.info('The problem does not have an optimal solution.')
+    #     return -1, [], -1, -1, False
 
     order = interpret_clingo(modelHelper.symbols, timesteps)
     assert len(order) == len(products)

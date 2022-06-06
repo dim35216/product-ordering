@@ -2,13 +2,13 @@
 ; Author: Michael Dinzinger
 
 (define (domain ProductOrdering) 
-(:requirements :strips :typing :preferences :numeric-fluents)
+(:requirements :strips :typing :action-costs)
 
 (:types product - object)
 
 (:functions
     (changeover-time ?x ?y - product)
-    (overall-changeover-time)
+    (total-cost)
 )
 
 (:predicates
@@ -31,7 +31,6 @@
             (queued ?x)
             (processing)
             (not (not-initialized))
-            (assign (overall-changeover-time) 0)
           )
 )
 
@@ -48,7 +47,7 @@
             (not (to-be-processed ?x))
             (processed ?x)
             (queued ?y)
-            (+ (overall-changeover-time) (changeover-time ?x ?y))
+            (increase (total-cost) (changeover-time ?x ?y))
           )
 )
 

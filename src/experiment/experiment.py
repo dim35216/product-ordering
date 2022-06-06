@@ -8,7 +8,7 @@ Ordering problem. These approaches are:
     combination of start and end product
 - Using the ILP approach
 """
-from typing import Set, Dict
+from typing import Set, Dict, Any
 import logging
 import math
 import random
@@ -21,8 +21,8 @@ from approaches.tsp import run_tsp_encoding
 from approaches.concorde import run_concorde
 from approaches.asp import run_asp
 from approaches.bad import run_bad_encoding
-from approaches.seq import run_seq_encoding
 from approaches.ilp import run_ilp
+from approaches.pddl import run_pddl_solver
 from utils import setup_logger, calculate_oct
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from constants.constants import CHANGEOVER_MATRIX, PROJECT_FOLDER, RESULTS_FILE
@@ -68,7 +68,7 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
     products = select_random_set_of_product(sample_size, run)
     LOGGER.debug('product samples: %s', str(products))
 
-    result = {
+    result : Dict[str, Any] = {
         'Time': math.nan,
         'OptValue': math.nan,
         'C': math.nan,
@@ -120,16 +120,6 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Models'] = models
         result['Timeout'] = timeout
 
-    elif encoding == 'seq':
-        temp = time.time()
-        order, rules, models, timeout = run_seq_encoding(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['C'] = calculate_oct(order)
-        result['GroundRules'] = rules
-        result['Models'] = models
-        result['Timeout'] = timeout
-
     elif encoding == 'ilp':
         temp = time.time()
         order, num_variables, num_constraints, timeout = run_ilp(products)
@@ -140,10 +130,19 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Constraints'] = num_constraints
         result['Timeout'] = timeout
 
+    elif encoding == 'pddl':
+        temp = time.time()
+        opt_value, order, timeout = run_pddl_solver(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
+        result['Timeout'] = timeout
+
     else:
         LOGGER.info('Encoding %s is unknown', encoding)
 
-    timeouts[encoding][n] = timeouts[encoding][n] and result['Timeout']
+    timeouts[encoding][sample_size] = timeouts[encoding][sample_size] and result['Timeout']
 
     with open(RESULTS_FILE, 'a', encoding='utf-8') as filehandle:
         filehandle.write('{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}\n'.format(
@@ -170,24 +169,25 @@ if __name__ == '__main__':
         # 'concorde',
         'asp',
         # 'bad',
-        # 'seq',
-        # 'ilp'
+        # 'ilp',
+        # 'pddl'
     ]
 
     # Make and clean instances folders
+    subfolders = ['tsp', 'pddl', 'lp']
     instances_folder = os.path.join(PROJECT_FOLDER, 'experiments', 'instances')
     if not os.path.isdir(instances_folder):
         os.mkdir(instances_folder)
-    for encoding in encodings:
-        folder = os.path.join(instances_folder, encoding)
+    for subfolder in subfolders:
+        folder = os.path.join(instances_folder, subfolder)
         if not os.path.isdir(folder):
             os.mkdir(folder)
         else:
             for file in os.listdir(folder):
                 os.remove(os.path.join(folder, file))
 
-    numProducts = list(range(6, 30, 4)) # [4, 8, 12, 16, 20, 24]
-    runs = list(range(3))
+    numProducts = [6] # list(range(6, 30, 4)) # [4, 8, 12, 16, 20, 24]
+    runs = list(range(1))
 
     for encoding in encodings:
         timeouts[encoding] = {}

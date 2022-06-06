@@ -14,7 +14,8 @@ class Parser:
     into a domain file and a problem file
     """
 
-    SUPPORTED_REQUIREMENTS = [':strips', ':typing', ':preferences', ':numeric-fluents']
+    SUPPORTED_REQUIREMENTS = [':strips', ':typing', ':action-costs', ':preferences',
+        ':numeric-fluents', ':negative-preconditions']
 
     def __init__(self, domain : str, problem : str) -> None:
         """Constructor of PDDL parser

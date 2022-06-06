@@ -81,10 +81,11 @@ def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = 
     edge_weights = build_graph(products, start, end, cyclic=True)
     instance = create_lp_instance(edge_weights)
 
-    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'tsp',
+    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'lp',
         f'instance_{len(products)}_{run}.lp')
-    with open(filename, 'w') as filehandle:
-        filehandle.write(instance)
+    if not os.path.exists(filename):
+        with open(filename, 'w') as filehandle:
+            filehandle.write(instance)
 
     ctl = clingo.Control()
     ctl.load(TSP_ENCODING)
