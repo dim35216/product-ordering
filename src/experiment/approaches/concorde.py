@@ -7,7 +7,7 @@ import subprocess
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import FAST_DOWNWARD_EXE, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
+from constants.constants import CONCORDE_EXE, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import build_graph, create_tsp_instance, interpret_tsp_solution, transform_symmetric
 
@@ -39,8 +39,8 @@ def run_concorde(products : Set[str], run : int, start : Union[str, None] = None
     filename_sol = os.path.join(INSTANCES_FOLDER, 'tsp', f'instance_{len(products)}_{run}.sol')
 
     try:
-        args = [FAST_DOWNWARD_EXE, '-f', '-x', '-o', filename_sol, filename_tsp]
-        subprocess.run(args, capture_output=True, timeout=TIMEOUT)
+        args = [CONCORDE_EXE, '-f', '-x', '-o', filename_sol, filename_tsp]
+        subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         LOGGER.info('The time limit is exceeded.')
         return [], True

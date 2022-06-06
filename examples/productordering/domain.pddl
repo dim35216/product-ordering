@@ -67,6 +67,7 @@
 
 (:action dummy
   :precondition (and (finalized))
+  :effect (and (finalized))
 )
 
 )

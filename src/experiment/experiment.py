@@ -17,6 +17,7 @@ import os
 import sys
 from joblib import Parallel, delayed
 import pandas as pd
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from approaches.tsp import run_tsp_encoding
 from approaches.concorde import run_concorde
 from approaches.asp import run_asp

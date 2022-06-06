@@ -15,23 +15,17 @@ from src.pddl.modeler.modeler import Modeler
 
 LOGGER = logging.getLogger('experiment')
 
-def interpret_sas_plan(filename : str) -> Tuple[int, List[str]]:
-    pattern_initialize = re.compile(r'\(initialize p(\w*)\)')
-    pattern_switch = re.compile(r'\(switch p(\w*) p(\w*)\)')
-    pattern_finalize = re.compile(r'\(finalize p(\w*)\)')
-    pattern_cost = re.compile(r'; cost = (\d*) \(general cost\)')
-        
-    with open(filename, 'r') as filehandle:
-        lines = filehandle.readlines()
-
-    assert len(lines) > 1
-    lines = [line.rstrip() for line in lines]
+def interpret_sas_plan(cmd_output : str) -> Tuple[int, List[str]]:
+    pattern_initialize = re.compile(r'initialize p(\w*)')
+    pattern_switch = re.compile(r'switch p(\w*) p(\w*)')
+    pattern_finalize = re.compile(r'finalize p(\w*)')
+    pattern_cost = re.compile(r'Plan cost: (\d*)')
 
     p_start = None
     p_end = None
     order = []
     opt_value = -1
-    for line in lines:
+    for line in cmd_output.split('\n'):
         result_initialize = pattern_initialize.match(line)
         result_switch = pattern_switch.match(line)
         result_finalize = pattern_finalize.match(line)
@@ -90,14 +84,17 @@ def run_pddl_solver(products : Set[str], run : int, start : Union[str, None] = N
     assert os.path.exists(DOMAIN_PDDL)
 
     try:
-        args = [FAST_DOWNWARD_EXE, '--build release64dynamic', '--plan-file', plan_filename,
-            DOMAIN_PDDL, pddl_filename, '--search "astar(lmcut())"']
-        subprocess.run(args, capture_output=True, timeout=TIMEOUT)
+        args = [FAST_DOWNWARD_EXE, '--alias', 'seq-opt-lmcut', '--build', 'release64dynamic',
+            DOMAIN_PDDL, pddl_filename]
+        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
+        cmd_output = process.stdout
     except subprocess.TimeoutExpired:
         LOGGER.info('The time limit is exceeded.')
         return -1, [], True
-
-    assert os.path.exists(plan_filename)
-    opt_value, order = interpret_sas_plan(plan_filename)
+    
+    with open(plan_filename, 'w') as filehandle:
+        filehandle.write(cmd_output)
+        
+    opt_value, order = interpret_sas_plan(cmd_output)
     
     return opt_value, order, False
