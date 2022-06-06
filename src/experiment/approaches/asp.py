@@ -3,14 +3,15 @@ Modelling as PDDL instance and translating it into a logic program
 """
 from typing import Sequence, Set, List, Tuple, Union
 import logging
+import time
 import re
 import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import DOMAIN_PDDL, PROJECT_FOLDER
+from constants.constants import DOMAIN_PDDL, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
-from src.experiment.utils import build_graph
+from src.experiment.utils import build_graph, ModelHelper
 from src.pddl.modeler.modeler import Modeler
 from src.pddl.translator.translator import Translator
 
@@ -67,7 +68,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
     return order
 
 def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
+    end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the Answer Set Planning
     approach; first, the problem is understood as a classical planning problem with preferences
     and this is encoded in the planning problem description language PDDL; the PDDL instance is
@@ -81,11 +82,10 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], int, int]: minimal overall changeover time, optimal product order, \
-            number of ground rules, number of calculated models
+        Tuple[int, List[str], int, int, bool]: minimal overall changeover time, optimal product \
+            order, number of ground rules, number of calculated models, flag for timeout occurred
     """
-    pddl_filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'asp',
-        f'instance_{len(products)}_{run}.pddl')
+    pddl_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.pddl')
     LOGGER.debug('pddl_filename: %s', pddl_filename)
     lp_filename = f'{pddl_filename}.lp'
 
@@ -109,19 +109,29 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     ctl = clingo.Control()
     ctl.add('base', [], logic_program)
     ctl.ground([('base', [])])
-    solve_handle = ctl.solve(yield_=True)
-    assert isinstance(solve_handle, clingo.SolveHandle)
-    model = None
-    for model in solve_handle:
-        pass
-    if model is None:
-        LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1
-    order = interpret_clingo(model.symbols(shown=True), timesteps)
+
+    modelHelper = ModelHelper()
+    start_time = time.time()
+    solve_handle : clingo.SolveHandle
+    with ctl.solve(on_model=modelHelper.on_model, on_finish=modelHelper.on_finish,
+        async_=True) as solve_handle: # type: ignore
+        while not solve_handle.wait(timeout=10.0):
+            if time.time() - start_time > TIMEOUT:
+                break
+
+    # if not modelHelper.exhausted:
+    #     LOGGER.info('The time limit is exceeded.')
+    #     return -1, [], -1, -1, True
+
+    # if not modelHelper.optimal:
+    #     LOGGER.info('The problem does not have an optimal solution.')
+    #     return -1, [], -1, -1, False
+
+    order = interpret_clingo(modelHelper.symbols, timesteps)
     assert len(order) == len(products)
 
     rules = int(ctl.statistics['problem']['lp']['rules'])
     opt_value = int(ctl.statistics['summary']['costs'][0])
     models = int(ctl.statistics['summary']['models']['enumerated'])
 
-    return opt_value, order, rules, models
+    return opt_value, order, rules, models, False

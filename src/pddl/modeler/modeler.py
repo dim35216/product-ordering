@@ -31,16 +31,6 @@ f'''(define (problem ProductOrdering-{problemname})
 ''' - product
 )
 
-(:goal
-    (and
-        (finalized)
-'''
-        for product in edge_weights:
-            result += f'        (processed p{product})\n'
-        result += \
-'''    )
-)
-
 (:init
     (not-initialized)
 '''
@@ -56,7 +46,17 @@ f'''(define (problem ProductOrdering-{problemname})
         result += \
 ''')
 
-(:metric minimize (+ (overall-changeover-time)))
+(:goal
+    (and
+        (finalized)
+'''
+        for product in edge_weights:
+            result += f'        (processed p{product})\n'
+        result += \
+'''    )
+)
+
+(:metric minimize (total-cost))
 
 )
 '''

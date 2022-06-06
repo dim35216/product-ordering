@@ -3,14 +3,15 @@ Interpretation of problem instance as TSP and usage of perfect encoding
 """
 from typing import Sequence, Set, List, Tuple, Union
 import logging
+import time
 import re
 import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import TSP_ENCODING, PROJECT_FOLDER
+from constants.constants import TSP_ENCODING, PROJECT_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
-from src.experiment.utils import build_graph, create_tsp_instance
+from src.experiment.utils import build_graph, create_lp_instance, ModelHelper
 
 LOGGER = logging.getLogger('experiment')
 
@@ -24,9 +25,9 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
     Returns:
         List[str]: optimal product order
     """
-    pattern_cycle = re.compile(r'cycle\((\d*),(\d*)\)')
-    pattern_start = re.compile(r'cycle\(v,(\d*)\)')
-    pattern_end = re.compile(r'cycle\((\d*),v\)')
+    pattern_cycle = re.compile(r'cycle\((\w*),(\w*)\)')
+    pattern_start = re.compile(r'cycle\(v,(\w*)\)')
+    pattern_end = re.compile(r'cycle\((\w*),v\)')
 
     start = None
     end = None
@@ -62,7 +63,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
     return order
 
 def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], int, int]:
+    end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -74,34 +75,45 @@ def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = 
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], int, int]: objective value, optimal product order, number of ground \
-            rules, number of calculated models
+        Tuple[int, List[str], int, int, bool]: objective value, optimal product order, number of \
+            ground rules, number of calculated models, flag for timeout occurred
     """
     edge_weights = build_graph(products, start, end, cyclic=True)
-    instance = create_tsp_instance(edge_weights)
+    instance = create_lp_instance(edge_weights)
 
-    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'tsp',
+    filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'lp',
         f'instance_{len(products)}_{run}.lp')
-    with open(filename, 'w') as filehandle:
-        filehandle.write(instance)
+    if not os.path.exists(filename):
+        with open(filename, 'w') as filehandle:
+            filehandle.write(instance)
 
     ctl = clingo.Control()
     ctl.load(TSP_ENCODING)
     ctl.add('base', [], instance)
     ctl.ground([('base', [])])
-    solve_handle = ctl.solve(yield_=True)
-    assert isinstance(solve_handle, clingo.SolveHandle)
-    model = None
-    for model in solve_handle:
-        pass
-    if model is None:
+
+    modelHelper = ModelHelper()
+    start_time = time.time()
+    solve_handle : clingo.SolveHandle
+    with ctl.solve(on_model=modelHelper.on_model, on_finish=modelHelper.on_finish,
+        async_=True) as solve_handle: # type: ignore
+        while not solve_handle.wait(timeout=10.0):
+            if time.time() - start_time > TIMEOUT:
+                break
+
+    if not modelHelper.exhausted:
+        LOGGER.info('The time limit is exceeded.')
+        return -1, [], -1, -1, True
+
+    if not modelHelper.optimal:
         LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1
-    order = interpret_clingo(model.symbols(shown=True))
+        return -1, [], -1, -1, False
+
+    order = interpret_clingo(modelHelper.symbols)
     assert len(order) == len(products)
 
     rules = int(ctl.statistics['problem']['lp']['rules'])
     opt_value = int(ctl.statistics['summary']['costs'][0])
     models = int(ctl.statistics['summary']['models']['enumerated'])
 
-    return opt_value, order, rules, models
+    return opt_value, order, rules, models, False
