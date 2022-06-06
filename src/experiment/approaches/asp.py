@@ -119,13 +119,13 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
             if time.time() - start_time > TIMEOUT:
                 break
 
-    # if not modelHelper.exhausted:
-    #     LOGGER.info('The time limit is exceeded.')
-    #     return -1, [], -1, -1, True
+    if not modelHelper.exhausted:
+        LOGGER.info('The time limit is exceeded.')
+        return -1, [], -1, -1, True
 
-    # if not modelHelper.optimal:
-    #     LOGGER.info('The problem does not have an optimal solution.')
-    #     return -1, [], -1, -1, False
+    if not modelHelper.optimal:
+        LOGGER.info('The problem does not have an optimal solution.')
+        return -1, [], -1, -1, False
 
     order = interpret_clingo(modelHelper.symbols, timesteps)
     assert len(order) == len(products)
