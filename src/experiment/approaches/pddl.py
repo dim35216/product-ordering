@@ -83,10 +83,14 @@ def run_pddl_solver(products : Set[str], run : int, start : Union[str, None] = N
     assert os.path.exists(pddl_filename)
     assert os.path.exists(DOMAIN_PDDL)
 
+    wd = os.path.join(INSTANCES_FOLDER, 'pddl', f'{len(products)}_{run}')
+    if not os.path.isdir(wd):
+        os.mkdir(wd)
+    
     try:
         args = [FAST_DOWNWARD_EXE, '--alias', 'seq-opt-lmcut', '--build', 'release64dynamic',
             DOMAIN_PDDL, pddl_filename]
-        process = subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT)
+        process = subprocess.run(args, capture_output=True, text=True, cwd=wd, timeout=TIMEOUT)
         cmd_output = process.stdout
     except subprocess.TimeoutExpired:
         LOGGER.info('The time limit is exceeded.')
