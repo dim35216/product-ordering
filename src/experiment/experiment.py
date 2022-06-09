@@ -18,10 +18,9 @@ import sys
 from joblib import Parallel, delayed
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from approaches.tsp import run_tsp_encoding
+from approaches.aspclingo import run_clingo
 from approaches.concorde import run_concorde
 from approaches.asp import run_asp
-from approaches.bad import run_bad_encoding
 from approaches.ilp import run_ilp
 from approaches.pddl import run_pddl_solver
 from utils import setup_logger, calculate_oct
@@ -53,7 +52,7 @@ def select_random_set_of_product(sample_size : int, run : int) -> Set[str]:
     samples = set(random.sample(products, sample_size))
     return samples
 
-def run_experiment(sample_size : int, run : int, encoding : str) -> None:
+def run_experiment(sample_size : int, run : int, approach : str) -> None:
     """Run an experiment instance for the given input, which is independent from the other
     instances and can be runned in parallel. The result of the experiment is then just appended
     to the results file
@@ -61,11 +60,11 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
     Args:
         sample_size (int): number of products
         run (int): id of run
-        encoding (str): encoding
+        approach (str): used solving approach
     """
     setup_logger()
 
-    LOGGER.info('run_experiment(%s, %s, %s) started', sample_size, run, encoding)
+    LOGGER.info('run_experiment(%s, %s, %s) started', sample_size, run, approach)
     products = select_random_set_of_product(sample_size, run)
     LOGGER.debug('product samples: %s', str(products))
 
@@ -73,25 +72,49 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         'Time': math.nan,
         'OptValue': math.nan,
         'C': math.nan,
-        'GroundRules': math.nan,
-        'Models': math.nan,
+        'ClingoStats': {
+            'Constraints': math.nan,
+            'Complexity': math.nan,
+            'Vars': math.nan,
+            'Atoms': math.nan,
+            'Bodies': math.nan,
+            'Rules': math.nan,
+            'Choices': math.nan,
+            'Conflicts': math.nan,
+            'Restarts': math.nan,
+            'Models': math.nan
+        },
         'Variables': math.nan,
         'Constraints': math.nan,
         'Timeout': False
     }
 
-    if encoding == 'tsp':
+    if approach in ['clingo', 'clingo-bad']:
+        encoding = 'perfect'
+        if approach == 'clingo-bad':
+            encoding = 'bad'
         temp = time.time()
-        opt_value, order, rules, models, timeout = run_tsp_encoding(products, run)
+        opt_value, order, stats, timeout = run_clingo(products, run, encoding=encoding)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
-        result['GroundRules'] = rules
-        result['Models'] = models
+        if not timeout:
+            result['ClingoStats'] = stats
         result['Timeout'] = timeout
 
-    elif encoding == 'concorde':
+    elif approach == 'asp':
+        temp = time.time()
+        opt_value, order, stats, timeout = run_asp(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
+        if not timeout:
+            result['ClingoStats'] = stats
+        result['Timeout'] = timeout
+
+    elif approach == 'concorde':
         temp = time.time()
         order, timeout = run_concorde(products, run)
         temp = time.time() - temp
@@ -99,29 +122,7 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['C'] = calculate_oct(order)
         result['Timeout'] = timeout
 
-    elif encoding == 'asp':
-        temp = time.time()
-        opt_value, order, rules, models, timeout = run_asp(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['OptValue'] = opt_value
-        result['C'] = calculate_oct(order)
-        result['GroundRules'] = rules
-        result['Models'] = models
-        result['Timeout'] = timeout
-
-    elif encoding == 'bad':
-        temp = time.time()
-        opt_value, order, rules, models, timeout = run_bad_encoding(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['OptValue'] = opt_value
-        result['C'] = calculate_oct(order)
-        result['GroundRules'] = rules
-        result['Models'] = models
-        result['Timeout'] = timeout
-
-    elif encoding == 'ilp':
+    elif approach == 'ilp':
         temp = time.time()
         order, num_variables, num_constraints, timeout = run_ilp(products)
         temp = time.time() - temp
@@ -131,7 +132,7 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Constraints'] = num_constraints
         result['Timeout'] = timeout
 
-    elif encoding == 'pddl':
+    elif approach == 'pddl':
         temp = time.time()
         opt_value, order, timeout = run_pddl_solver(products, run)
         temp = time.time() - temp
@@ -141,37 +142,48 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Timeout'] = timeout
 
     else:
-        LOGGER.info('Encoding %s is unknown', encoding)
+        LOGGER.info('Approach %s is unknown', approach)
 
-    timeouts[encoding][sample_size] = timeouts[encoding][sample_size] and result['Timeout']
+    timeouts[approach][sample_size] = timeouts[approach][sample_size] and result['Timeout']
 
     with open(RESULTS_FILE, 'a', encoding='utf-8') as filehandle:
-        filehandle.write('{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}\n'.format(
-            sample_size,
-            run,
-            encoding,
-            result['Time'],
-            result['OptValue'],
-            result['C'],
-            result['GroundRules'],
-            result['Variables'],
-            result['Constraints'],
-            result['Timeout'])
-        )
+        filehandle.write('{}\n'.format(
+            ','.join([
+                str(sample_size),
+                str(run),
+                approach,
+                str(result['Time']),
+                str(result['OptValue']),
+                str(result['C']),
+                str(result['ClingoStats']['Constraints']),
+                str(result['ClingoStats']['Complexity']),
+                str(result['ClingoStats']['Vars']),
+                str(result['ClingoStats']['Atoms']),
+                str(result['ClingoStats']['Bodies']),
+                str(result['ClingoStats']['Rules']),
+                str(result['ClingoStats']['Choices']),
+                str(result['ClingoStats']['Conflicts']),
+                str(result['ClingoStats']['Restarts']),
+                str(result['ClingoStats']['Models']),
+                str(result['Variables']),
+                str(result['Constraints']),
+                str(result['Timeout'])
+            ])
+        ))
     
-    LOGGER.info('run_experiment(%s, %s, %s) ended', sample_size, run, encoding)
+    LOGGER.info('run_experiment(%s, %s, %s) ended', sample_size, run, approach)
 
 if __name__ == '__main__':
     setup_logger()
 
-    # List of encodings
-    encodings = [
-        # 'tsp',
+    # List of solving approaches
+    approaches = [
         # 'concorde',
+        # 'clingo',
+        # 'clingo-bad',
+        # 'pddl',
         'asp',
-        # 'bad',
-        # 'ilp',
-        # 'pddl'
+        # 'ilp'
     ]
 
     # Make and clean instances folders
@@ -192,16 +204,16 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = [6] # list(range(6, 30, 4)) # [4, 8, 12, 16, 20, 24]
-    runs = list(range(1))
+    numProducts = [8, 9] # list(range(6, 72, 1))
+    runs = [0] # list(range(4))
 
-    for encoding in encodings:
-        timeouts[encoding] = {}
+    for approach in approaches:
+        timeouts[approach] = {}
         for n in numProducts:
-            timeouts[encoding][n] = True
-            Parallel(n_jobs=-1, require='sharedmem')(delayed(run_experiment)(n, run, encoding) \
+            timeouts[approach][n] = True
+            Parallel(n_jobs=-1, require='sharedmem')(delayed(run_experiment)(n, run, approach) \
                 for run in runs)
-            if timeouts[encoding][n]:
-                LOGGER.info('All %d runs for encoding %s exceeded the time limit; the sample ' + \
-                    'size %d won\'t be increased anymore', len(runs), encoding, n)
+            if timeouts[approach][n]:
+                LOGGER.info('All %d runs for approach %s exceeded the time limit; the sample ' + \
+                    'size %d won\'t be increased anymore', len(runs), approach, n)
                 break
