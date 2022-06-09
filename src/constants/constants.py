@@ -6,8 +6,8 @@ INSTANCES_FOLDER = os.path.join(PROJECT_FOLDER, 'experiments', 'instances')
 CHANGEOVER_MATRIX = os.path.join(PROJECT_FOLDER, 'experiments', 'changeover_matrix.csv')
 
 # LP encodings
-TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'perfect_tsp.lp')
-BAD_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'bad_tsp.lp')
+PERFECT_TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'perfect_tsp.lp')
+BAD_TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'bad_tsp.lp')
 
 # PDDL encodings
 DOMAIN_PDDL = os.path.join(PROJECT_FOLDER, 'examples', 'productordering', 'domain.pddl')

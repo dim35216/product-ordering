@@ -130,8 +130,33 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     order = interpret_clingo(modelHelper.symbols, timesteps)
     assert len(order) == len(products)
 
-    rules = int(ctl.statistics['problem']['lp']['rules'])
     opt_value = int(ctl.statistics['summary']['costs'][0])
+
+    constraints = int(ctl.statistics['problem']['generator']['constraints'])
+    complexity = int(ctl.statistics['problem']['generator']['complexity'])
+    vars = int(ctl.statistics['problem']['generator']['vars'])
+
+    atoms = int(ctl.statistics['problem']['lp']['atoms'])
+    bodies = int(ctl.statistics['problem']['lp']['bodies'])
+    rules = int(ctl.statistics['problem']['lp']['rules'])
+
+    choices = int(ctl.statistics['solving']['solvers']['choices'])
+    conflicts = int(ctl.statistics['solving']['solvers']['conflicts'])
+    restarts = int(ctl.statistics['solving']['solvers']['restarts'])
+
     models = int(ctl.statistics['summary']['models']['enumerated'])
 
-    return opt_value, order, rules, models, False
+    stats = {
+        'Constraints': constraints,
+        'Complexity': complexity,
+        'Vars': vars,
+        'Atoms': atoms,
+        'Bodies': bodies,
+        'Rules': rules,
+        'Choices': choices,
+        'Conflicts': conflicts,
+        'Restarts': restarts,
+        'Models': models
+    }
+
+    return opt_value, order, stats, False
