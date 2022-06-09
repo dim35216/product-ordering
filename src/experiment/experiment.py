@@ -185,7 +185,12 @@ if __name__ == '__main__':
             os.mkdir(folder)
         else:
             for file in os.listdir(folder):
-                os.remove(os.path.join(folder, file))
+                if os.path.isdir(os.path.join(folder, file)):
+                    for file2 in os.listdir(os.path.join(folder, file)):
+                        os.remove(os.path.join(folder, file, file2))
+                    os.rmdir(os.path.join(folder, file))
+                else:
+                    os.remove(os.path.join(folder, file))
 
     numProducts = [6] # list(range(6, 30, 4)) # [4, 8, 12, 16, 20, 24]
     runs = list(range(1))

@@ -118,7 +118,7 @@ def extract_order(variables : Dict[str, Dict[str, Var]]) -> List[str]:
     return order
 
 def run_ilp(products : Set[str]) -> Tuple[List[str], int, int, bool]:
-    """Computing the Product Ordering problem as an ILP using Google OR-Tools
+    """Computing the Product Ordering problem as an ILP using the Python API of CPLEX
 
     Args:
         products (Set[str]): set of products
