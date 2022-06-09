@@ -1,7 +1,7 @@
 """Answer Set Planning approach for solving the Product Ordering approach:
 Modelling as PDDL instance and translating it into a logic program
 """
-from typing import Sequence, Set, List, Tuple, Union
+from typing import Dict, Sequence, Set, List, Tuple, Union, Any
 import logging
 import time
 import re
@@ -68,7 +68,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
     return order
 
 def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
+    end : Union[str, None] = None) -> Tuple[int, List[str], Dict[str, Any], bool]:
     """Computing the Product Ordering problem as a logic program using the Answer Set Planning
     approach; first, the problem is understood as a classical planning problem with preferences
     and this is encoded in the planning problem description language PDDL; the PDDL instance is
@@ -82,8 +82,8 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], int, int, bool]: minimal overall changeover time, optimal product \
-            order, number of ground rules, number of calculated models, flag for timeout occurred
+        Tuple[int, List[str], Dict[str, Any], bool]: minimal overall changeover time, optimal \
+            product order, dictionary of clingo statistics, flag for timeout occurred
     """
     pddl_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.pddl')
     LOGGER.debug('pddl_filename: %s', pddl_filename)
@@ -121,11 +121,11 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
 
     if not modelHelper.exhausted:
         LOGGER.info('The time limit is exceeded.')
-        return -1, [], -1, -1, True
+        return -1, [], {}, True
 
     if not modelHelper.optimal:
         LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1, False
+        return -1, [], {}, False
 
     order = interpret_clingo(modelHelper.symbols, timesteps)
     assert len(order) == len(products)

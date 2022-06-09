@@ -2,7 +2,7 @@
 Interpretation of problem instance as TSP, transformation into a linear program and usage of
 perfect and bad encoding
 """
-from typing import Sequence, Set, List, Tuple, Union
+from typing import Sequence, Set, List, Tuple, Union, Dict, Any
 import logging
 import time
 import re
@@ -65,7 +65,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
 
 def run_clingo(products : Set[str], run : int, start : Union[str, None] = None, \
     end : Union[str, None] = None, encoding : str = 'perfect') -> \
-    Tuple[int, List[str], dict, bool]:
+    Tuple[int, List[str], Dict[str, Any], bool]:
     """Computing the Product Ordering problem as a logic program using the perfect or bad TSP
     encoding
 
@@ -76,8 +76,8 @@ def run_clingo(products : Set[str], run : int, start : Union[str, None] = None, 
         end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
-        Tuple[int, List[str], dict, bool]: objective value, optimal product order, dictionary of \
-            clingo statistics, flag for timeout occurred
+        Tuple[int, List[str], Dict[str, Any], bool]: objective value, optimal product order, \
+            dictionary of clingo statistics, flag for timeout occurred
     """
     assert encoding in ['perfect', 'bad']
 
@@ -109,11 +109,11 @@ def run_clingo(products : Set[str], run : int, start : Union[str, None] = None, 
 
     if not modelHelper.exhausted:
         LOGGER.info('The time limit is exceeded.')
-        return -1, [], -1, -1, True
+        return -1, [], {}, True
 
     if not modelHelper.optimal:
         LOGGER.info('The problem does not have an optimal solution.')
-        return -1, [], -1, -1, False
+        return -1, [], {}, False
 
     order = interpret_clingo(modelHelper.symbols)
     assert len(order) == len(products)

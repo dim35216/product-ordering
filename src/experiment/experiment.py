@@ -18,7 +18,7 @@ import sys
 from joblib import Parallel, delayed
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from approaches.clingo import run_clingo
+from approaches.aspclingo import run_clingo
 from approaches.concorde import run_concorde
 from approaches.asp import run_asp
 from approaches.ilp import run_ilp
@@ -99,15 +99,8 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
-        result['ClingoStats'] = stats
-        result['Timeout'] = timeout
-
-    elif approach == 'concorde':
-        temp = time.time()
-        order, timeout = run_concorde(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['C'] = calculate_oct(order)
+        if not timeout:
+            result['ClingoStats'] = stats
         result['Timeout'] = timeout
 
     elif approach == 'asp':
@@ -117,7 +110,16 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
-        result['ClingoStats'] = stats
+        if not timeout:
+            result['ClingoStats'] = stats
+        result['Timeout'] = timeout
+
+    elif approach == 'concorde':
+        temp = time.time()
+        order, timeout = run_concorde(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['C'] = calculate_oct(order)
         result['Timeout'] = timeout
 
     elif approach == 'ilp':
@@ -147,25 +149,25 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
     with open(RESULTS_FILE, 'a', encoding='utf-8') as filehandle:
         filehandle.write('{}\n'.format(
             ','.join([
-                sample_size,
-                run,
+                str(sample_size),
+                str(run),
                 approach,
-                result['Time'],
-                result['OptValue'],
-                result['C'],
-                result['ClingoStats']['Constraints'],
-                result['ClingoStats']['Complexity'],
-                result['ClingoStats']['Vars'],
-                result['ClingoStats']['Atoms'],
-                result['ClingoStats']['Bodies'],
-                result['ClingoStats']['Rules'],
-                result['ClingoStats']['Choices'],
-                result['ClingoStats']['Conflicts'],
-                result['ClingoStats']['Restarts'],
-                result['ClingoStats']['Models'],
-                result['Variables'],
-                result['Constraints'],
-                result['Timeout']
+                str(result['Time']),
+                str(result['OptValue']),
+                str(result['C']),
+                str(result['ClingoStats']['Constraints']),
+                str(result['ClingoStats']['Complexity']),
+                str(result['ClingoStats']['Vars']),
+                str(result['ClingoStats']['Atoms']),
+                str(result['ClingoStats']['Bodies']),
+                str(result['ClingoStats']['Rules']),
+                str(result['ClingoStats']['Choices']),
+                str(result['ClingoStats']['Conflicts']),
+                str(result['ClingoStats']['Restarts']),
+                str(result['ClingoStats']['Models']),
+                str(result['Variables']),
+                str(result['Constraints']),
+                str(result['Timeout'])
             ])
         ))
     
@@ -176,12 +178,12 @@ if __name__ == '__main__':
 
     # List of solving approaches
     approaches = [
-        'concorde',
-        'clingo',
-        'clingo-bad',
-        'pddl',
+        # 'concorde',
+        # 'clingo',
+        # 'clingo-bad',
+        # 'pddl',
         'asp',
-        'ilp'
+        # 'ilp'
     ]
 
     # Make and clean instances folders
@@ -202,8 +204,8 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = list(range(6, 72, 1))
-    runs = list(range(4))
+    numProducts = [8, 9] # list(range(6, 72, 1))
+    runs = [0] # list(range(4))
 
     for approach in approaches:
         timeouts[approach] = {}
