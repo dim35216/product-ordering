@@ -21,4 +21,4 @@ CONCORDE_EXE = os.path.join(PROJECT_FOLDER, 'include', 'concorde-bin')
 FAST_DOWNWARD_EXE = os.path.join(PROJECT_FOLDER, 'include', './fast-downward.py')
 
 # Timeout per experiment in seconds
-TIMEOUT = 300.0
+TIMEOUT = 600.0
