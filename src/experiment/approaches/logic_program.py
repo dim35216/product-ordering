@@ -9,7 +9,7 @@ import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import TSP_ENCODING, PROJECT_FOLDER, TIMEOUT
+from constants.constants import PO_ENCODING, PROJECT_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import build_graph, create_lp_instance, ModelHelper
 
@@ -25,22 +25,22 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
     Returns:
         List[str]: optimal product order
     """
-    pattern_cycle = re.compile(r'cycle\((\w*),(\w*)\)')
-    pattern_start = re.compile(r'cycle\(v,(\w*)\)')
-    pattern_end = re.compile(r'cycle\((\w*),v\)')
+    pattern_switch = re.compile(r'switch\((\w*),(\w*)\)')
+    pattern_start = re.compile(r'switch\(v,(\w*)\)')
+    pattern_end = re.compile(r'switch\((\w*),v\)')
 
     start = None
     end = None
     order_dict = {}
     for symbol in symbols:
         atom = str(symbol)
-        result_cycle = pattern_cycle.match(atom)
+        result_switch = pattern_switch.match(atom)
         result_start = pattern_start.match(atom)
         result_end = pattern_end.match(atom)
 
-        if result_cycle:
-            product1 = result_cycle.group(1)
-            product2 = result_cycle.group(2)
+        if result_switch:
+            product1 = result_switch.group(1)
+            product2 = result_switch.group(2)
             assert product1 not in order_dict
             order_dict[product1] = product2
 
@@ -62,7 +62,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
 
     return order
 
-def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
+def run_logic_program(products : Set[str], run : int, start : Union[str, None] = None, \
     end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
@@ -78,7 +78,7 @@ def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = 
         Tuple[int, List[str], int, int, bool]: objective value, optimal product order, number of \
             ground rules, number of calculated models, flag for timeout occurred
     """
-    edge_weights = build_graph(products, start, end, cyclic=True)
+    edge_weights = build_graph(products, start, end, cyclic=True, consider_campaigns=False)
     instance = create_lp_instance(edge_weights)
 
     filename = os.path.join(PROJECT_FOLDER, 'experiments', 'instances', 'lp',
@@ -88,7 +88,7 @@ def run_tsp_encoding(products : Set[str], run : int, start : Union[str, None] = 
             filehandle.write(instance)
 
     ctl = clingo.Control()
-    ctl.load(TSP_ENCODING)
+    ctl.load(PO_ENCODING)
     ctl.add('base', [], instance)
     ctl.ground([('base', [])])
 

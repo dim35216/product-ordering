@@ -76,7 +76,7 @@ def run_pddl_solver(products : Set[str], run : int, start : Union[str, None] = N
     pddl_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.pddl')
     plan_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.plan')
     
-    edge_weights = build_graph(products, start, end)
+    edge_weights = build_graph(products, start, end, consider_campaigns=False)
 
     modeler = Modeler()
     modeler.create_instance(edge_weights, pddl_filename)

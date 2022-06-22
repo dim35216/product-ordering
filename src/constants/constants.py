@@ -4,10 +4,12 @@ PROJECT_FOLDER = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__
 INSTANCES_FOLDER = os.path.join(PROJECT_FOLDER, 'experiments', 'instances')
 
 CHANGEOVER_MATRIX = os.path.join(PROJECT_FOLDER, 'experiments', 'changeover_matrix.csv')
+CAMPAIGNS_ORDER = os.path.join(PROJECT_FOLDER, 'experiments', 'campaigns_order.csv')
 
 # LP encodings
 TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'perfect_tsp.lp')
 BAD_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'bad_tsp.lp')
+PO_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'perfect_po.lp')
 
 # PDDL encodings
 DOMAIN_PDDL = os.path.join(PROJECT_FOLDER, 'examples', 'productordering', 'domain.pddl')

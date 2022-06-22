@@ -10,7 +10,7 @@ import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from constants.constants import BAD_ENCODING, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
-from src.experiment.approaches.tsp import interpret_clingo
+from experiment.approaches.logic_program import interpret_clingo
 from src.experiment.utils import build_graph, create_lp_instance, ModelHelper
 
 LOGGER = logging.getLogger('experiment')

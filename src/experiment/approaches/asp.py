@@ -28,9 +28,10 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
     Returns:
         List[str]: optimal product order
     """
-    pattern_initialize = re.compile(r'occ\(initialize\(p(\w*)\),(\d*)\)')
-    pattern_switch = re.compile(r'occ\(switch\(p(\w*),p(\w*)\),(\d*)\)')
-    pattern_finalize = re.compile(r'occ\(finalize\(p(\w*)\),(\d*)\)')
+    pattern_initialize = re.compile(r'occ\(initialize\(p(\w*),\w*\),(\d*)\)')
+    pattern_product_switch = re.compile(r'occ\(product_switch\(p(\w*),p(\w*),\w*\),(\d*)\)')
+    pattern_campaign_switch = re.compile(r'occ\(campaign_switch\(p(\w*),p(\w*),\w*,\w*\),(\d*)\)')
+    pattern_finalize = re.compile(r'occ\(finalize\(p(\w*),\w*\),(\d*)\)')
 
     p_start = None
     p_end = None
@@ -38,7 +39,8 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
     for symbol in symbols:
         atom = str(symbol)
         result_initialize = pattern_initialize.match(atom)
-        result_switch = pattern_switch.match(atom)
+        result_product_switch = pattern_product_switch.match(atom)
+        result_campaign_switch = pattern_campaign_switch.match(atom)
         result_finalize = pattern_finalize.match(atom)
 
         if result_initialize:
@@ -46,10 +48,17 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
             time = int(result_initialize.group(2))
             assert time == 1
 
-        if result_switch:
-            product1 = result_switch.group(1)
-            product2 = result_switch.group(2)
-            time = int(result_switch.group(3))
+        if result_product_switch:
+            product1 = result_product_switch.group(1)
+            product2 = result_product_switch.group(2)
+            time = int(result_product_switch.group(3))
+            order[time - 2] = product1
+            order[time - 1] = product2
+
+        if result_campaign_switch:
+            product1 = result_campaign_switch.group(1)
+            product2 = result_campaign_switch.group(2)
+            time = int(result_campaign_switch.group(3))
             order[time - 2] = product1
             order[time - 1] = product2
 
@@ -89,7 +98,7 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     LOGGER.debug('pddl_filename: %s', pddl_filename)
     lp_filename = f'{pddl_filename}.lp'
 
-    edge_weights = build_graph(products, start, end)
+    edge_weights = build_graph(products, start, end, consider_campaigns=False)
 
     modeler = Modeler()
     modeler.create_instance(edge_weights, pddl_filename)

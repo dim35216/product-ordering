@@ -18,10 +18,10 @@ import sys
 from joblib import Parallel, delayed
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from approaches.tsp import run_tsp_encoding
+from approaches.logic_program import run_logic_program
 from approaches.concorde import run_concorde
 from approaches.asp import run_asp
-from approaches.bad import run_bad_encoding
+# from approaches.bad import run_bad_encoding
 from approaches.ilp import run_ilp
 from approaches.pddl import run_pddl_solver
 from utils import setup_logger, calculate_oct
@@ -46,7 +46,7 @@ def select_random_set_of_product(sample_size : int, run : int) -> Set[str]:
         Set[str]: set of products
     """
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-    products = df_matrix.columns.to_list()
+    products = [str(product) for product in df_matrix.index]
     random.seed(42)
     seed = random.randint(run * 100 + 1, (run + 1) * 100)
     random.seed(seed)
@@ -82,7 +82,7 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
 
     if encoding == 'tsp':
         temp = time.time()
-        opt_value, order, rules, models, timeout = run_tsp_encoding(products, run)
+        opt_value, order, rules, models, timeout = run_logic_program(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
@@ -193,7 +193,7 @@ if __name__ == '__main__':
                     os.remove(os.path.join(folder, file))
 
     numProducts = [6] # list(range(6, 30, 4)) # [4, 8, 12, 16, 20, 24]
-    runs = list(range(1))
+    runs = [3] # list(range(4))
 
     for encoding in encodings:
         timeouts[encoding] = {}
