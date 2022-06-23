@@ -57,7 +57,7 @@ def interpret_sas_plan(cmd_output : str) -> Tuple[int, List[str]]:
 
     return opt_value, order
 
-def run_pddl_solver(products : Set[str], run : int, start : Union[str, None] = None, \
+def run_fast_downward(products : Set[str], run : int, start : Union[str, None] = None, \
     end : Union[str, None] = None) -> Tuple[int, List[str], bool]:
     """Computing the Product Ordering problem with the help of an optimizing PDDL solver. This
     solver is named Delphi1 and is taken from the website of IPC2018. It extends the common Fast

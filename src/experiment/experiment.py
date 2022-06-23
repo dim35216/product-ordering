@@ -18,12 +18,11 @@ import sys
 from joblib import Parallel, delayed
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from approaches.logic_program import run_logic_program
-from approaches.concorde import run_concorde
+from approaches.logic_program import run_perfect_encoding, run_bad_encoding
+from approaches.tsp_solver import run_concorde
 from approaches.asp import run_asp
-# from approaches.bad import run_bad_encoding
 from approaches.ilp import run_ilp
-from approaches.pddl import run_pddl_solver
+from approaches.pddl_solver import run_fast_downward
 from utils import setup_logger, calculate_oct
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from constants.constants import CHANGEOVER_MATRIX, PROJECT_FOLDER, RESULTS_FILE
@@ -80,9 +79,9 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         'Timeout': False
     }
 
-    if encoding == 'tsp':
+    if encoding == 'lp_perfect':
         temp = time.time()
-        opt_value, order, rules, models, timeout = run_logic_program(products, run)
+        opt_value, order, rules, models, timeout = run_perfect_encoding(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
@@ -91,7 +90,7 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Models'] = models
         result['Timeout'] = timeout
 
-    elif encoding == 'concorde':
+    elif encoding == 'tsp':
         temp = time.time()
         order, timeout = run_concorde(products, run)
         temp = time.time() - temp
@@ -110,7 +109,7 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Models'] = models
         result['Timeout'] = timeout
 
-    elif encoding == 'bad':
+    elif encoding == 'lp_bad':
         temp = time.time()
         opt_value, order, rules, models, timeout = run_bad_encoding(products, run)
         temp = time.time() - temp
@@ -133,7 +132,7 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
 
     elif encoding == 'pddl':
         temp = time.time()
-        opt_value, order, timeout = run_pddl_solver(products, run)
+        opt_value, order, timeout = run_fast_downward(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
@@ -166,11 +165,11 @@ if __name__ == '__main__':
 
     # List of encodings
     encodings = [
+        'lp_perfect',
         # 'tsp',
-        # 'concorde',
         'asp',
-        # 'bad',
-        # 'ilp',
+        'lp_bad',
+        'ilp',
         # 'pddl'
     ]
 

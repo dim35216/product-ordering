@@ -1,6 +1,6 @@
 """Collection of auxiliary functions for conducting a computational experiment
 """
-from itertools import combinations, permutations
+from itertools import permutations
 from typing import List, Dict, Union, Set, Tuple
 import logging
 import tsplib95
