@@ -83,6 +83,8 @@
   :precondition (and
                   (initialized)
                   (product-campaign ?x ?c)
+                  (product-queued ?x)
+                  (campaign-queued ?c)
                 )
   :effect (and
             (not (initialized))

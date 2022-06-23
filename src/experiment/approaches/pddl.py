@@ -17,7 +17,7 @@ LOGGER = logging.getLogger('experiment')
 
 def interpret_sas_plan(cmd_output : str) -> Tuple[int, List[str]]:
     pattern_initialize = re.compile(r'initialize p(\w*)')
-    pattern_switch = re.compile(r'switch p(\w*) p(\w*)')
+    pattern_switch = re.compile(r'\w*-switch p(\w*) p(\w*)')
     pattern_finalize = re.compile(r'finalize p(\w*)')
     pattern_cost = re.compile(r'Plan cost: (\d*)')
 

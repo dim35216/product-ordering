@@ -9,7 +9,7 @@ import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import PO_ENCODING, PROJECT_FOLDER, TIMEOUT
+from constants.constants import PERFECT_PO_ENCODING, PROJECT_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import build_graph, create_lp_instance, ModelHelper
 
@@ -88,7 +88,7 @@ def run_logic_program(products : Set[str], run : int, start : Union[str, None] =
             filehandle.write(instance)
 
     ctl = clingo.Control()
-    ctl.load(PO_ENCODING)
+    ctl.load(PERFECT_PO_ENCODING)
     ctl.add('base', [], instance)
     ctl.ground([('base', [])])
 
