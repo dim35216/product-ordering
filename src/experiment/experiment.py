@@ -166,11 +166,11 @@ if __name__ == '__main__':
     # List of encodings
     encodings = [
         'lp_perfect',
-        # 'tsp',
-        'asp',
         'lp_bad',
+        'tsp',
+        'pddl'
         'ilp',
-        # 'pddl'
+        'asp',
     ]
 
     # Make and clean instances folders
@@ -191,8 +191,8 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = [6] # list(range(6, 30, 4)) # [4, 8, 12, 16, 20, 24]
-    runs = [3] # list(range(4))
+    numProducts = list(range(6, 72, 1))
+    runs = list(range(4))
 
     for encoding in encodings:
         timeouts[encoding] = {}

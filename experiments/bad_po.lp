@@ -18,8 +18,10 @@ reached(Y) :- switch(X, Y), reached(X).
 
 :- product(Y), not reached(Y).
 
-campaign_switch(C1, C2) :- switch(X, Y), campaign(X, C1), campaign(Y, C2).
-:- campaign_switch(C1, C2), campaign_switch(C2, C1).
+campaign_switch(C1, C2) :- switch(X, Y), campaign(X, C1), campaign(Y, C2), C1 != C2.
+numCampaigns(N) :- N = #sum{ 1, C : product(X) , campaign(X, C) }.
+numCampaignSwitches(N) :- N = #sum{ 1, C1, C2 : campaign_switch(C1, C2) }.
+:- numCampaigns(N1), numCampaignSwitches(N2), N1 != N2 + 1.
 
 #show switch/2.
 
