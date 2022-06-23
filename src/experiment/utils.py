@@ -1,5 +1,6 @@
 """Collection of auxiliary functions for conducting a computational experiment
 """
+from itertools import permutations
 from typing import List, Dict, Union, Set, Tuple
 import logging
 import tsplib95
@@ -9,7 +10,7 @@ import clingo
 import pandas as pd
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from constants.constants import CHANGEOVER_MATRIX
+from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER
 
 def setup_logger() -> None:
     """Auxiliary method for getting a logger, which even works in the parallelized joblib
@@ -51,7 +52,9 @@ def calculate_oct(order: List[str], occurences : Union[Dict[str, int], None] = N
     return changeover_time
 
 def build_graph(products : Set[str], start : Union[str, None] = None, \
-    end : Union[str, None] = None, cyclic : bool = False) -> Dict[str, Dict[str, int]]:
+    end : Union[str, None] = None, cyclic : bool = False,
+    consider_campaigns : bool = True) \
+    -> Union[List[Dict[str, Dict[str, int]]], Dict[str, Dict[str, int]]]:
     """Building a graph instance for the given changeover matrix, whereas only the products in
     the given set are taken into account, such that the graph instance won't be bigger than
     necessary. Additionally a start and end product can be given. For the construction of a graph
@@ -72,51 +75,99 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
       The node V is connected to all other nodes with an ingoing arc of cost 0
 
     Args:
-        products (Set[str]): _description_
-        start (Union[str, None], optional): _description_. Defaults to None.
-        cyclic (bool, optional): _description_. Defaults to False.
+        products (Set[str]): set of products
+        start (Union[str, None], optional): start product. Defaults to None.
+        end (Union[str, None], optional): end product. Defaults to None.
+        cyclic (bool, optional): model as cyclic graph instance. Defaults to False.
+        consider_campaigns (bool, optional): consider the campaigns of products. Defaults to True.
 
     Returns:
-        Dict[str, Dict[str, int]]: _description_
+        Union[List[Dict[str, Dict[str, int]]], Dict[str, Dict[str, int]]]: graph instance or if \
+            campaigns are considered list of graph instance possibilities
     """
     assert start is None or start in products
     assert end is None or end in products
-    edge_weights : Dict[str, Dict[str, int]] = {}
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-    for product1 in products:
-        edge_weights[product1] = {}
-        for product2 in products:
-            value = df_matrix.at[int(product1), product2]
-            if value < 10080:
-                edge_weights[product1][product2] = value
-    if cyclic:
-        edge_weights['v'] = {}
-    else:
-        edge_weights['start'] = {}
-        edge_weights['end'] = {}
-    if start is None:
-        for product in products:
-            if cyclic:
-                edge_weights['v'][product] = 0
-            else:
-                edge_weights['start'][product] = 0
-    else:
+    campaigns = set([df_matrix.at[int(product), 'Campaign'] for product in products])
+    df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
+
+    campaigns_orders = [[]]
+    if consider_campaigns:
+        for step in sorted(df_order['Order'].drop_duplicates().to_list()):
+            step_campaigns = campaigns.intersection(df_order[df_order['Order'] == step].index.to_list())
+            possibilities = sorted([permutation for permutation in permutations(step_campaigns)])
+            new_campaigns_orders = []
+            for campaigns_order in campaigns_orders:
+                for possibility in possibilities:
+                    new_campaigns_orders.append(campaigns_order + list(possibility))
+            campaigns_orders = new_campaigns_orders
+
+    edge_weights_list : List[Dict[str, Dict[str, int]]] = []
+    for campaigns_order in campaigns_orders:
+        edge_weights : Dict[str, Dict[str, int]] = {}
+
+        for product1 in products:
+            campaign_order1 = 0
+            if consider_campaigns:
+                campaign_order1 = campaigns_order.index(df_matrix.at[int(product1), 'Campaign'])
+            edge_weights[product1] = {}
+            for product2 in products:
+                campaign_order2 = 0
+                if consider_campaigns:
+                    campaign_order2 = campaigns_order.index(df_matrix.at[int(product2), 'Campaign'])
+                value = df_matrix.at[int(product1), product2]
+                if value < 10080 and campaign_order2 - campaign_order1 in [0, 1]:
+                    edge_weights[product1][product2] = value
         if cyclic:
-            edge_weights['v'][start] = 0
+            edge_weights['v'] = {}
         else:
-            edge_weights['start'][start] = 0
-    if end is None:
-        for product in products:
+            edge_weights['start'] = {}
+            edge_weights['end'] = {}
+        if start is None:
+            for product in products:
+                campaign_order = 0
+                if consider_campaigns:
+                    campaign_order = campaigns_order.index(df_matrix.at[int(product), 'Campaign'])
+                if campaign_order == 0:
+                    if cyclic:
+                        edge_weights['v'][product] = 0
+                    else:
+                        edge_weights['start'][product] = 0
+        else:
+            campaign_order = 0
+            if consider_campaigns:
+                campaign_order = campaigns_order.index(df_matrix.at[int(start), 'Campaign'])
+                assert campaign_order == 0
             if cyclic:
-                edge_weights[product]['v'] = 0
+                edge_weights['v'][start] = 0
             else:
-                edge_weights[product]['end'] = 0
-    else:
-        if cyclic:
-            edge_weights[end]['v'] = 0
+                edge_weights['start'][start] = 0
+        if end is None:
+            for product in products:
+                campaign_order = 0
+                if consider_campaigns:
+                    campaign_order = campaigns_order.index(df_matrix.at[int(product), 'Campaign'])
+                if campaign_order == len(campaigns_order):
+                    if cyclic:
+                        edge_weights[product]['v'] = 0
+                    else:
+                        edge_weights[product]['end'] = 0
         else:
-            edge_weights[end]['end'] = 0
-    return edge_weights
+            campaign_order = 0
+            if consider_campaigns:
+                campaign_order = campaigns_order[df_matrix.at[int(end), 'Campaign']]
+                assert campaign_order == len(campaigns_order)
+            if cyclic:
+                edge_weights[end]['v'] = 0
+            else:
+                edge_weights[end]['end'] = 0
+        
+        edge_weights_list.append(edge_weights)
+
+    if consider_campaigns:
+        return edge_weights_list
+    else:
+        return edge_weights_list[0]
 
 def create_lp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
     """Modelling a Product Ordering problem instance as a logic program in Answer Set Programming
@@ -127,15 +178,24 @@ def create_lp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
     Returns:
         str: resulting LP source code
     """
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
+
     result : str = ''
     for product in edge_weights:
-        result += f'node({product}).\n'
+        result += f'product({product}).\n'
+    for product in edge_weights:
+        if product not in ['v', 'start', 'end']:
+            campaign = df_matrix.at[int(product), 'Campaign'].replace(' ', '_').replace('ü', 'ue').lower()
+            result += f'campaign({product}, {campaign}).\n'
     for product1 in edge_weights:
         for product2 in edge_weights[product1]:
-            result += f'edge({product1}, {product2}).\n'
+            result += f'changeover({product1}, {product2}).\n'
     for product1 in edge_weights:
         for product2 in edge_weights[product1]:
-            result += f'cost({product1}, {product2}, {edge_weights[product1][product2]}).\n'
+            result += f'changeover_time({product1}, {product2}, {edge_weights[product1][product2]}).\n'
+    for campaign, order in df_order['Order'].items():
+        result += f'campaign_order({campaign.replace(" ", "_").replace("ü", "ue").lower()}, {order}).\n'
 
     return result
 

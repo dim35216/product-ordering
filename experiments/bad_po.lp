@@ -1,0 +1,28 @@
+% Perfect TSP encoding in Answer Set Programming
+% Author: Michael Dinzinger
+% 
+% Advanced encoding with good properties in scalability
+% The Encoding was copied from a video of the Potassco YouTube-Channel:
+% https://youtu.be/m0wL33OO_DA
+
+impossible(X, Y) :- changeover(X, Y),
+                    campaign(X, C1), campaign(Y, C2),
+                    campaign_order(C1, O1), campaign_order(C2, O2),
+                    O2 - O1 < 0.
+
+{ switch(X, Y) : changeover(X, Y), not impossible(X, Y) } = 1 :- product(X).
+{ switch(X, Y) : changeover(X, Y), not impossible(X, Y) } = 1 :- product(Y).
+
+reached(X) :- X = #min{ Y : product(Y) }.
+reached(Y) :- switch(X, Y), reached(X).
+
+:- product(Y), not reached(Y).
+
+campaign_switch(C1, C2) :- switch(X, Y), campaign(X, C1), campaign(Y, C2), C1 != C2.
+numCampaigns(N) :- N = #sum{ 1, C : product(X) , campaign(X, C) }.
+numCampaignSwitches(N) :- N = #sum{ 1, C1, C2 : campaign_switch(C1, C2) }.
+:- numCampaigns(N1), numCampaignSwitches(N2), N1 != N2 + 1.
+
+#show switch/2.
+
+#minimize{ C, X : changeover_time(X, Y, C), changeover(X, Y) }.

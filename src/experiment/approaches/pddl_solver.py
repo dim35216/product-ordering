@@ -17,7 +17,7 @@ LOGGER = logging.getLogger('experiment')
 
 def interpret_sas_plan(cmd_output : str) -> Tuple[int, List[str]]:
     pattern_initialize = re.compile(r'initialize p(\w*)')
-    pattern_switch = re.compile(r'switch p(\w*) p(\w*)')
+    pattern_switch = re.compile(r'\w*-switch p(\w*) p(\w*)')
     pattern_finalize = re.compile(r'finalize p(\w*)')
     pattern_cost = re.compile(r'Plan cost: (\d*)')
 
@@ -57,7 +57,7 @@ def interpret_sas_plan(cmd_output : str) -> Tuple[int, List[str]]:
 
     return opt_value, order
 
-def run_pddl_solver(products : Set[str], run : int, start : Union[str, None] = None, \
+def run_fast_downward(products : Set[str], run : int, start : Union[str, None] = None, \
     end : Union[str, None] = None) -> Tuple[int, List[str], bool]:
     """Computing the Product Ordering problem with the help of an optimizing PDDL solver. This
     solver is named Delphi1 and is taken from the website of IPC2018. It extends the common Fast
@@ -76,7 +76,7 @@ def run_pddl_solver(products : Set[str], run : int, start : Union[str, None] = N
     pddl_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.pddl')
     plan_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.plan')
     
-    edge_weights = build_graph(products, start, end)
+    edge_weights = build_graph(products, start, end, consider_campaigns=False)
 
     modeler = Modeler()
     modeler.create_instance(edge_weights, pddl_filename)
