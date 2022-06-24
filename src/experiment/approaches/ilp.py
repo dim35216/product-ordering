@@ -10,7 +10,7 @@ import pandas as pd
 from docplex.mp.model import Model
 from docplex.mp.dvar import Var
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PROJECT_FOLDER, TIMEOUT
+from constants.constants import CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, PROJECT_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import calculate_oct, build_graph
 
@@ -26,8 +26,8 @@ def create_model(edge_weights : Dict[str, Dict[str, int]]) -> Tuple[Model, \
     Returns:
         Tuple[Model, Dict[str, Dict[str, Var]]]: DOcplex model and dictionary of all variables
     """
-    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-    numCampaigns = len(set([df_matrix.at[int(product), 'Campaign']
+    df_properties = pd.read_csv(PRODUCT_PROPERTIES, index_col='Product')
+    numCampaigns = len(set([df_properties.at[int(product), 'Campaign']
         for product in edge_weights.keys() - ['v']]))
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
     campaigns_order = df_order['Order'].to_dict()
@@ -47,7 +47,7 @@ def create_model(edge_weights : Dict[str, Dict[str, int]]) -> Tuple[Model, \
         campaigns_switch[product1] = {}
         campaign1 = 'v'
         if product1 != 'v':
-            campaign1 = df_matrix.at[int(product1), 'Campaign']
+            campaign1 = df_properties.at[int(product1), 'Campaign']
         for product2 in edge_weights[product1]:
             var = model.binary_var(f'x_{product1}_{product2}')
             variables[product1][product2] = var
@@ -55,7 +55,7 @@ def create_model(edge_weights : Dict[str, Dict[str, int]]) -> Tuple[Model, \
             delta_minus[product2].append(var)
             campaign2 = 'v'
             if product2 != 'v':
-                campaign2 = df_matrix.at[int(product2), 'Campaign']
+                campaign2 = df_properties.at[int(product2), 'Campaign']
             if campaign1 == campaign2:
                 campaigns_switch[product1][product2] = 0
             else:
@@ -86,11 +86,11 @@ def create_model(edge_weights : Dict[str, Dict[str, int]]) -> Tuple[Model, \
 
     for product1 in edge_weights:
         if product1 != 'v':
-            campaigns_order1 = campaigns_order[df_matrix.at[int(product1), 'Campaign']]
+            campaigns_order1 = campaigns_order[df_properties.at[int(product1), 'Campaign']]
             for product2 in edge_weights[product1]:
                 if product2 != 'v':
                     linear_expr = model.linear_expr()
-                    campaigns_order2 = campaigns_order[df_matrix.at[int(product2), 'Campaign']]
+                    campaigns_order2 = campaigns_order[df_properties.at[int(product2), 'Campaign']]
                     coeff = campaigns_order2 - campaigns_order1
                     linear_expr.add_term(variables[product1][product2], coeff)
                     model.add_constraint(0 <= linear_expr, f'campaigns_order_{product1}_{product2}')

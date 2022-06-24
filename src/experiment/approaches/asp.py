@@ -76,8 +76,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
 
     return order
 
-def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], Dict[str, Any], bool]:
+def run_asp(products : Set[str], run : int) -> Tuple[int, List[str], Dict[str, Any], bool]:
     """Computing the Product Ordering problem as a logic program using the Answer Set Planning
     approach; first, the problem is understood as a classical planning problem with preferences
     and this is encoded in the planning problem description language PDDL; the PDDL instance is
@@ -87,8 +86,6 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     Args:
         products (Set[str]): set of products
         run (int): id of run
-        start (Union[str, None], optional): start product. Defaults to None.
-        end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
         Tuple[int, List[str], Dict[str, Any], bool]: minimal overall changeover time, optimal \
@@ -98,10 +95,8 @@ def run_asp(products : Set[str], run : int, start : Union[str, None] = None, \
     LOGGER.debug('pddl_filename: %s', pddl_filename)
     lp_filename = f'{pddl_filename}.lp'
 
-    edge_weights = build_graph(products, start, end, consider_campaigns=False)
-
     modeler = Modeler()
-    modeler.create_instance(edge_weights, pddl_filename)
+    modeler.create_instance(products, pddl_filename)
     assert os.path.exists(pddl_filename)
     assert os.path.exists(DOMAIN_PDDL)
 

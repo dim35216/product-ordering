@@ -90,25 +90,6 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Models'] = models
         result['Timeout'] = timeout
 
-    elif encoding == 'tsp':
-        temp = time.time()
-        order, timeout = run_concorde(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['C'] = calculate_oct(order)
-        result['Timeout'] = timeout
-
-    elif encoding == 'asp':
-        temp = time.time()
-        opt_value, order, rules, models, timeout = run_asp(products, run)
-        temp = time.time() - temp
-        result['Time'] = temp
-        result['OptValue'] = opt_value
-        result['C'] = calculate_oct(order)
-        result['GroundRules'] = rules
-        result['Models'] = models
-        result['Timeout'] = timeout
-
     elif encoding == 'lp_bad':
         temp = time.time()
         opt_value, order, rules, models, timeout = run_bad_encoding(products, run)
@@ -118,6 +99,23 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['C'] = calculate_oct(order)
         result['GroundRules'] = rules
         result['Models'] = models
+        result['Timeout'] = timeout
+
+    elif encoding == 'tsp':
+        temp = time.time()
+        order, timeout = run_concorde(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['C'] = calculate_oct(order)
+        result['Timeout'] = timeout
+
+    elif encoding == 'pddl':
+        temp = time.time()
+        opt_value, order, timeout = run_fast_downward(products, run)
+        temp = time.time() - temp
+        result['Time'] = temp
+        result['OptValue'] = opt_value
+        result['C'] = calculate_oct(order)
         result['Timeout'] = timeout
 
     elif encoding == 'ilp':
@@ -130,13 +128,15 @@ def run_experiment(sample_size : int, run : int, encoding : str) -> None:
         result['Constraints'] = num_constraints
         result['Timeout'] = timeout
 
-    elif encoding == 'pddl':
+    elif encoding == 'asp':
         temp = time.time()
-        opt_value, order, timeout = run_fast_downward(products, run)
+        opt_value, order, rules, models, timeout = run_asp(products, run)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
+        result['GroundRules'] = rules
+        result['Models'] = models
         result['Timeout'] = timeout
 
     else:
@@ -166,11 +166,11 @@ if __name__ == '__main__':
     # List of encodings
     encodings = [
         'lp_perfect',
-        'lp_bad',
-        'tsp',
-        'pddl'
-        'ilp',
-        'asp',
+        # 'lp_bad',
+        # 'tsp',
+        # 'pddl'
+        # 'ilp',
+        # 'asp',
     ]
 
     # Make and clean instances folders
@@ -191,8 +191,8 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = list(range(6, 72, 1))
-    runs = list(range(4))
+    numProducts = [6] # list(range(6, 72, 1))
+    runs = [0] # list(range(4))
 
     for encoding in encodings:
         timeouts[encoding] = {}

@@ -5,6 +5,8 @@ INSTANCES_FOLDER = os.path.join(PROJECT_FOLDER, 'experiments', 'instances')
 
 CHANGEOVER_MATRIX = os.path.join(PROJECT_FOLDER, 'experiments', 'changeover_matrix.csv')
 CAMPAIGNS_ORDER = os.path.join(PROJECT_FOLDER, 'experiments', 'campaigns_order.csv')
+PRODUCT_PROPERTIES = os.path.join(PROJECT_FOLDER, 'experiments', 'product_properties.csv')
+PRODUCT_QUANTITY = os.path.join(PROJECT_FOLDER, 'experiments', 'product_quantity.csv')
 
 # LP encodings
 PERFECT_TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'perfect_tsp.lp')

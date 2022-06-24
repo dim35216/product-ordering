@@ -63,8 +63,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
 
     return order
 
-def run_perfect_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
+def run_perfect_encoding(products : Set[str], run : int) -> Tuple[int, List[str], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -72,15 +71,12 @@ def run_perfect_encoding(products : Set[str], run : int, start : Union[str, None
     Args:
         products (Set[str]): set of products
         run (int): id of run
-        start (Union[str, None], optional): start product. Defaults to None.
-        end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
         Tuple[int, List[str], int, int, bool]: objective value, optimal product order, number of \
             ground rules, number of calculated models, flag for timeout occurred
     """
-    edge_weights = build_graph(products, start, end, cyclic=True, consider_campaigns=False)
-    instance = create_lp_instance(edge_weights)
+    instance = create_lp_instance(products)
 
     filename = os.path.join(INSTANCES_FOLDER, 'lp', f'instance_{len(products)}_{run}.lp')
     if not os.path.exists(filename):
@@ -118,8 +114,7 @@ def run_perfect_encoding(products : Set[str], run : int, start : Union[str, None
 
     return opt_value, order, rules, models, False
 
-def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], int, int, bool]:
+def run_bad_encoding(products : Set[str], run : int) -> Tuple[int, List[str], int, int, bool]:
     """Computing the Product Ordering problem as a logic program using the bad TSP encoding;
     therefore the Product Ordering problem instance has to transformed into a TSP instance using
     a little additional logic program
@@ -127,15 +122,12 @@ def run_bad_encoding(products : Set[str], run : int, start : Union[str, None] = 
     Args:
         products (Set[str]): set of products
         run (int): id of run
-        start (Union[str, None], optional): start product. Defaults to None.
-        end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
         Tuple[int, List[str], int, int, bool]: objective value, optimal product order, number of \
             ground rules, number of calculated models, flag for timeout occurred
     """
-    edge_weights = build_graph(products, start, end, cyclic=True, consider_campaigns=False)
-    instance = create_lp_instance(edge_weights)
+    instance = create_lp_instance(products)
 
     filename = os.path.join(INSTANCES_FOLDER, 'lp', f'instance_{len(products)}_{run}.lp')
     if not os.path.exists(filename):

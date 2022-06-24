@@ -10,7 +10,7 @@ import clingo
 import pandas as pd
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER
+from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, PRODUCT_QUANTITY
 
 def setup_logger() -> None:
     """Auxiliary method for getting a logger, which even works in the parallelized joblib
@@ -88,7 +88,8 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     assert start is None or start in products
     assert end is None or end in products
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-    campaigns = set([df_matrix.at[int(product), 'Campaign'] for product in products])
+    df_properties = pd.read_csv(PRODUCT_PROPERTIES, index_col='Product')
+    campaigns = set([df_properties.at[int(product), 'Campaign'] for product in products])
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
 
     campaigns_orders : List[List[str]] = [[]]
@@ -109,12 +110,12 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
         for product1 in products:
             campaign_order1 = 0
             if consider_campaigns:
-                campaign_order1 = campaigns_order.index(df_matrix.at[int(product1), 'Campaign'])
+                campaign_order1 = campaigns_order.index(df_properties.at[int(product1), 'Campaign'])
             edge_weights[product1] = {}
             for product2 in products:
                 campaign_order2 = 0
                 if consider_campaigns:
-                    campaign_order2 = campaigns_order.index(df_matrix.at[int(product2), 'Campaign'])
+                    campaign_order2 = campaigns_order.index(df_properties.at[int(product2), 'Campaign'])
                 value = df_matrix.at[int(product1), product2]
                 if value < 10080 and campaign_order2 - campaign_order1 in [0, 1]:
                     edge_weights[product1][product2] = value
@@ -127,7 +128,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
             for product in products:
                 campaign_order = 0
                 if consider_campaigns:
-                    campaign_order = campaigns_order.index(df_matrix.at[int(product), 'Campaign'])
+                    campaign_order = campaigns_order.index(df_properties.at[int(product), 'Campaign'])
                 if campaign_order == 0:
                     if cyclic:
                         edge_weights['v'][product] = 0
@@ -136,7 +137,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
         else:
             campaign_order = 0
             if consider_campaigns:
-                campaign_order = campaigns_order.index(df_matrix.at[int(start), 'Campaign'])
+                campaign_order = campaigns_order.index(df_properties.at[int(start), 'Campaign'])
                 assert campaign_order == 0
             if cyclic:
                 edge_weights['v'][start] = 0
@@ -146,7 +147,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
             for product in products:
                 campaign_order = 0
                 if consider_campaigns:
-                    campaign_order = campaigns_order.index(df_matrix.at[int(product), 'Campaign'])
+                    campaign_order = campaigns_order.index(df_properties.at[int(product), 'Campaign'])
                 if campaign_order == len(campaigns_order):
                     if cyclic:
                         edge_weights[product]['v'] = 0
@@ -155,7 +156,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
         else:
             campaign_order = 0
             if consider_campaigns:
-                campaign_order = campaigns_order[df_matrix.at[int(end), 'Campaign']]
+                campaign_order = campaigns_order[df_properties.at[int(end), 'Campaign']]
                 assert campaign_order == len(campaigns_order)
             if cyclic:
                 edge_weights[end]['v'] = 0
@@ -169,33 +170,36 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     else:
         return edge_weights_list[0]
 
-def create_lp_instance(edge_weights : Dict[str, Dict[str, int]]) -> str:
+def create_lp_instance(products : Set[str]) -> str:
     """Modelling a Product Ordering problem instance as a logic program in Answer Set Programming
 
     Args:
-        edge_weights (Dict[str, Dict[str, int]]): model of graph of problem instance
+        products (Set[str]): set of products
 
     Returns:
         str: resulting LP source code
     """
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
+    df_properties = pd.read_csv(PRODUCT_PROPERTIES, index_col='Product')
+    df_quantity = pd.read_csv(PRODUCT_QUANTITY, index_col='Product')
 
     result : str = ''
-    for product in edge_weights:
+    for product in products:
         result += f'product({product}).\n'
-    for product in edge_weights:
-        if product not in ['v', 'start', 'end']:
-            campaign = df_matrix.at[int(product), 'Campaign'].replace(' ', '_').replace('ü', 'ue').lower()
-            result += f'campaign({product}, {campaign}).\n'
-    for product1 in edge_weights:
-        for product2 in edge_weights[product1]:
-            result += f'changeover({product1}, {product2}).\n'
-    for product1 in edge_weights:
-        for product2 in edge_weights[product1]:
-            result += f'changeover_time({product1}, {product2}, {edge_weights[product1][product2]}).\n'
+    for product1 in products:
+        for product2 in products:
+            distance = df_matrix.at[int(product1), product2]
+            if distance < 10080:
+                result += f'changeover({product1}, {product2}).\n'
+                result += f'changeover_time({product1}, {product2}, {distance}).\n'
+    for product in products:
+        result += f'campaign({product}, "{df_properties.at[int(product), "Campaign"]}").\n'
+        result += f'volume({product}, {df_properties.at[int(product), "Volume"]}).\n'
+        result += f'packaging({product}, "{df_properties.at[int(product), "Packaging"]}").\n'
+        result += f'quantity({product}, {df_quantity.at[int(product), "Quantity"]}).\n'
     for campaign, order in df_order['Order'].items():
-        result += f'campaign_order({campaign.replace(" ", "_").replace("ü", "ue").lower()}, {order}).\n'
+        result += f'campaign_order("{campaign}", {order}).\n'
 
     return result
 
