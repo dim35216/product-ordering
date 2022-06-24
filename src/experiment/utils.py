@@ -91,7 +91,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     campaigns = set([df_matrix.at[int(product), 'Campaign'] for product in products])
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
 
-    campaigns_orders = [[]]
+    campaigns_orders : List[List[str]] = [[]]
     if consider_campaigns:
         for step in sorted(df_order['Order'].drop_duplicates().to_list()):
             step_campaigns = campaigns.intersection(df_order[df_order['Order'] == step].index.to_list())
