@@ -1,7 +1,7 @@
 """Answer Set Planning approach for solving the Product Ordering approach:
 Modelling as PDDL instance and translating it into a logic program
 """
-from typing import Dict, Sequence, Set, List, Tuple, Union, Any
+from typing import *
 import logging
 import time
 import re
@@ -11,7 +11,7 @@ import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from constants.constants import DOMAIN_PDDL, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
 sys.path.append(os.path.abspath(PROJECT_FOLDER))
-from src.experiment.utils import build_graph, ModelHelper
+from src.experiment.utils import ModelHelper
 from src.pddl.modeler.modeler import Modeler
 from src.pddl.translator.translator import Translator
 

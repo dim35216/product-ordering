@@ -9,10 +9,10 @@ PRODUCT_PROPERTIES = os.path.join(PROJECT_FOLDER, 'experiments', 'product_proper
 PRODUCT_QUANTITY = os.path.join(PROJECT_FOLDER, 'experiments', 'product_quantity.csv')
 
 # LP encodings
-PERFECT_TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'perfect_tsp.lp')
-BAD_TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'bad_tsp.lp')
-PERFECT_PO_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'perfect_po.lp')
-BAD_PO_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'bad_po.lp')
+PERFECT_TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'encodings', 'perfect_tsp.lp')
+BAD_TSP_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'encodings', 'bad_tsp.lp')
+PERFECT_PO_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'encodings', 'perfect_po.lp')
+BAD_PO_ENCODING = os.path.join(PROJECT_FOLDER, 'experiments', 'encodings', 'bad_po.lp')
 
 # PDDL encodings
 DOMAIN_PDDL = os.path.join(PROJECT_FOLDER, 'examples', 'productordering', 'domain.pddl')

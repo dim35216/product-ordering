@@ -1,7 +1,7 @@
 """Collection of auxiliary functions for conducting a computational experiment
 """
+from typing import *
 from itertools import permutations
-from typing import List, Dict, Union, Set, Tuple
 import logging
 import tsplib95
 import os
@@ -82,8 +82,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
         consider_campaigns (bool, optional): consider the campaigns of products. Defaults to True.
 
     Returns:
-        Union[List[Dict[str, Dict[str, int]]], Dict[str, Dict[str, int]]]: graph instance or if \
-            campaigns are considered list of graph instance possibilities
+        Dict[str, Dict[str, int]]: graph instance
     """
     assert start is None or start in products
     assert end is None or end in products
@@ -91,84 +90,81 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     df_properties = pd.read_csv(PRODUCT_PROPERTIES, index_col='Product')
     campaigns = set([df_properties.at[int(product), 'Campaign'] for product in products])
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
+    campaigns_order = dict((campaign, df_order['Order'].to_dict()[campaign]) for campaign in campaigns)
 
-    campaigns_orders : List[List[str]] = [[]]
     if consider_campaigns:
+        counter = 0
         for step in sorted(df_order['Order'].drop_duplicates().to_list()):
             step_campaigns = campaigns.intersection(df_order[df_order['Order'] == step].index.to_list())
-            possibilities = sorted([permutation for permutation in permutations(step_campaigns)])
-            new_campaigns_orders = []
-            for campaigns_order in campaigns_orders:
-                for possibility in possibilities:
-                    new_campaigns_orders.append(campaigns_order + list(possibility))
-            campaigns_orders = new_campaigns_orders
-
-    edge_weights_list : List[Dict[str, Dict[str, int]]] = []
-    for campaigns_order in campaigns_orders:
-        edge_weights : Dict[str, Dict[str, int]] = {}
-
-        for product1 in products:
-            campaign_order1 = 0
-            if consider_campaigns:
-                campaign_order1 = campaigns_order.index(df_properties.at[int(product1), 'Campaign'])
-            edge_weights[product1] = {}
-            for product2 in products:
-                campaign_order2 = 0
-                if consider_campaigns:
-                    campaign_order2 = campaigns_order.index(df_properties.at[int(product2), 'Campaign'])
-                value = df_matrix.at[int(product1), product2]
-                if value < 10080 and campaign_order2 - campaign_order1 in [0, 1]:
-                    edge_weights[product1][product2] = value
-        if cyclic:
-            edge_weights['v'] = {}
-        else:
-            edge_weights['start'] = {}
-            edge_weights['end'] = {}
-        if start is None:
-            for product in products:
-                campaign_order = 0
-                if consider_campaigns:
-                    campaign_order = campaigns_order.index(df_properties.at[int(product), 'Campaign'])
-                if campaign_order == 0:
-                    if cyclic:
-                        edge_weights['v'][product] = 0
-                    else:
-                        edge_weights['start'][product] = 0
-        else:
-            campaign_order = 0
-            if consider_campaigns:
-                campaign_order = campaigns_order.index(df_properties.at[int(start), 'Campaign'])
-                assert campaign_order == 0
-            if cyclic:
-                edge_weights['v'][start] = 0
-            else:
-                edge_weights['start'][start] = 0
-        if end is None:
-            for product in products:
-                campaign_order = 0
-                if consider_campaigns:
-                    campaign_order = campaigns_order.index(df_properties.at[int(product), 'Campaign'])
-                if campaign_order == len(campaigns_order):
-                    if cyclic:
-                        edge_weights[product]['v'] = 0
-                    else:
-                        edge_weights[product]['end'] = 0
-        else:
-            campaign_order = 0
-            if consider_campaigns:
-                campaign_order = campaigns_order[df_properties.at[int(end), 'Campaign']]
-                assert campaign_order == len(campaigns_order)
-            if cyclic:
-                edge_weights[end]['v'] = 0
-            else:
-                edge_weights[end]['end'] = 0
-        
-        edge_weights_list.append(edge_weights)
-
-    if consider_campaigns:
-        return edge_weights_list
+            if len(step_campaigns) != 0:
+                for campaign in campaigns:
+                    campaigns_order[campaign] = counter
+                counter += 1
     else:
-        return edge_weights_list[0]
+        for campaign in campaigns_order:
+            campaigns_order[campaign] = -1
+    print('campaigns_order:', campaigns_order)
+
+    edge_weights : Dict[str, Dict[str, int]] = {}
+    for product1 in products:
+        edge_weights[product1] = {}
+        campaign1 = df_properties.at[int(product1), 'Campaign']
+        campaign_order1 = campaigns_order[campaign1]
+        for product2 in products:
+            campaign2 = df_properties.at[int(product2), 'Campaign']
+            campaign_order2 = campaigns_order[campaign2]
+            if campaign_order2 - campaign_order1 not in [0, 1]:
+                continue
+            distance = df_matrix.at[int(product1), product2]
+            if distance < 10080:
+                if campaign1 != campaign2:
+                    distance = 10080
+                edge_weights[product1][product2] = distance
+
+    if cyclic:
+        edge_weights['v'] = {}
+    else:
+        edge_weights['start'] = {}
+        edge_weights['end'] = {}
+
+    if start is None:
+        for product in products:
+            campaign_order = campaigns_order[df_properties.at[int(product), 'Campaign']]
+            if campaign_order in [-1, 0]:
+                if cyclic:
+                    edge_weights['v'][product] = 0
+                else:
+                    edge_weights['start'][product] = 0
+    else:
+        campaign_order = 0
+        if consider_campaigns:
+            campaign = df_properties.at[int(start), 'Campaign']
+            campaign_order = campaigns_order[campaign]
+            assert campaign_order == 0
+        if cyclic:
+            edge_weights['v'][start] = 0
+        else:
+            edge_weights['start'][start] = 0
+
+    if end is None:
+        for product in products:
+            campaign = df_properties.at[int(product), 'Campaign']
+            campaign_order = campaigns_order[campaign]
+            if campaign_order == len(campaigns_order):
+                if cyclic:
+                    edge_weights[product]['v'] = 0
+                else:
+                    edge_weights[product]['end'] = 0
+    else:
+        campaign = df_properties.at[int(end), 'Campaign']
+        campaign_order = campaigns_order[campaign]
+        assert campaign_order in [0, len(campaigns_order)]
+        if cyclic:
+            edge_weights[end]['v'] = 0
+        else:
+            edge_weights[end]['end'] = 0
+    
+    return edge_weights
 
 def create_lp_instance(products : Set[str]) -> str:
     """Modelling a Product Ordering problem instance as a logic program in Answer Set Programming
