@@ -103,7 +103,6 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     else:
         for campaign in campaigns_order:
             campaigns_order[campaign] = -1
-    print('campaigns_order:', campaigns_order)
 
     edge_weights : Dict[str, Dict[str, int]] = {}
     for product1 in products:

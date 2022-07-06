@@ -27,7 +27,7 @@ def scan_tokens(filename : str) -> Union[str, list]:
     # Tokenize
     stack = []
     tokens : List[Union[str, list]] = []
-    for token in re.findall(r'[()]|[^\s()]+', content):
+    for token in re.findall(r'[()]|\"[^()"]+\"|[^\s()]+', content):
         if token == '(':
             stack.append(tokens)
             tokens = []

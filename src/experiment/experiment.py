@@ -188,10 +188,10 @@ if __name__ == '__main__':
     approaches = [
         # 'lp_perfect',
         # 'lp_bad',
-        'tsp',
-        # 'pddl'
+        # 'tsp',
+        # 'pddl',
         # 'ilp',
-        # 'asp',
+        'asp',
     ]
 
     # Make and clean instances folders

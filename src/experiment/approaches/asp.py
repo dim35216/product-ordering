@@ -28,10 +28,10 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol], timesteps : int) -> List
     Returns:
         List[str]: optimal product order
     """
-    pattern_initialize = re.compile(r'occ\(initialize\(p(\w*),\w*\),(\d*)\)')
-    pattern_product_switch = re.compile(r'occ\(product_switch\(p(\w*),p(\w*),\w*\),(\d*)\)')
-    pattern_campaign_switch = re.compile(r'occ\(campaign_switch\(p(\w*),p(\w*),\w*,\w*\),(\d*)\)')
-    pattern_finalize = re.compile(r'occ\(finalize\(p(\w*),\w*\),(\d*)\)')
+    pattern_initialize = re.compile(r'occ\(initialize\(p(\w+),\w+\),(\d+)\)')
+    pattern_product_switch = re.compile(r'occ\(product_switch\(p(\w+),p(\w+),[\w" ]+\),(\d+)\)')
+    pattern_campaign_switch = re.compile(r'occ\(campaign_switch\(p(\w+),p(\w+),[\w" ]+,[\w" ]+\),(\d+)\)')
+    pattern_finalize = re.compile(r'occ\(finalize\(p(\w+),\w+\),(\d+)\)')
 
     p_start = None
     p_end = None
