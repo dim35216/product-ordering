@@ -1,7 +1,6 @@
 """Collection of auxiliary functions for conducting a computational experiment
 """
 from typing import *
-from itertools import permutations
 import logging
 import tsplib95
 import os
@@ -10,7 +9,8 @@ import clingo
 import pandas as pd
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, PRODUCT_QUANTITY
+from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, \
+    PRODUCT_QUANTITY, INF
 
 def setup_logger() -> None:
     """Auxiliary method for getting a logger, which even works in the parallelized joblib
@@ -39,21 +39,83 @@ def calculate_oct(order: List[str], occurences : Union[Dict[str, int], None] = N
         int: overall changeover time
     """
     assert len(order) == len(set(order))
-    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
     changeover_time = 0
     for i in range(1, len(order)):
         product1 = order[i - 1]
         product2 = order[i]
-        changeover_time += df_matrix.at[int(product1), product2]
+        changeover_time += df_matrix.at[product1, product2]
     if occurences is not None:
         for num in occurences.values():
             assert num >= 1
             changeover_time += (num - 1) * 15
     return changeover_time
 
+def get_changeover_matrix(products : Set[str], consider_side_constraints : bool = False) \
+    -> Tuple[pd.DataFrame, Dict[str, int]]:
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
+    df_matrix = df_matrix.loc[sorted(list(products)), sorted(list(products))]
+    df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
+    df_quantity = pd.read_csv(PRODUCT_QUANTITY, dtype={'Product': str}).set_index('Product')
+    campaigns = set([df_properties.at[product, 'Campaign'] for product in products])
+    df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
+
+    campaigns_order = {}
+    if consider_side_constraints:
+        counter = 0
+        for step in sorted(df_order['Order'].drop_duplicates().to_list()):
+            step_campaigns = campaigns.intersection(df_order[df_order['Order'] == step].index.to_list())
+            if len(step_campaigns) != 0:
+                for campaign in campaigns:
+                    campaigns_order[campaign] = counter
+                counter += 1
+    else:
+        for campaign in campaigns:
+            campaigns_order[campaign] = -1
+
+    for product1, row in df_matrix.iterrows():
+        campaign1 = df_properties.at[product1, 'Campaign']
+        campaign_order1 = campaigns_order[campaign1]
+        volume1 = df_properties.at[product1, 'Volume']
+        packaging1 = df_properties.at[product1, 'Packaging']
+        quantity1 = df_quantity.at[product1, 'Quantity']
+        max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
+            if campaign1 == df_properties.at[product, 'Campaign']])
+
+        for product2, distance in row.iteritems():
+            campaign2 = df_properties.at[product2, 'Campaign']
+            campaign_order2 = campaigns_order[campaign2]
+            volume2 = df_properties.at[product2, 'Volume']
+            packaging2 = df_properties.at[product2, 'Packaging']
+
+            if distance < INF:
+                if consider_side_constraints:
+                    rated = False
+                    if campaign1 == campaign2 \
+                        and volume1 == volume2 \
+                        and packaging1 != packaging2 \
+                        and packaging1 != 'Normal':
+                        rated = True
+
+                    if campaign1 != campaign2 \
+                        and quantity1 == max_quantity \
+                        and packaging1 == 'Normal':
+                        rated = True
+                    
+                    if not rated:
+                        df_matrix.at[product1, product2] *= 1000
+
+                    if campaign1 != campaign2:
+                        df_matrix.at[product1, product2] += 1000000
+
+                    if campaign_order2 - campaign_order1 not in [0, 1]:
+                        df_matrix.at[product1, product2] = INF
+    
+    return df_matrix, campaigns_order
+
 def build_graph(products : Set[str], start : Union[str, None] = None, \
     end : Union[str, None] = None, cyclic : bool = False,
-    consider_campaigns : bool = True) \
+    consider_side_constraints : bool = False) \
     -> Union[List[Dict[str, Dict[str, int]]], Dict[str, Dict[str, int]]]:
     """Building a graph instance for the given changeover matrix, whereas only the products in
     the given set are taken into account, such that the graph instance won't be bigger than
@@ -79,45 +141,22 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
         start (Union[str, None], optional): start product. Defaults to None.
         end (Union[str, None], optional): end product. Defaults to None.
         cyclic (bool, optional): model as cyclic graph instance. Defaults to False.
-        consider_campaigns (bool, optional): consider the campaigns of products. Defaults to True.
+        consider_side_constraints (bool, optional): consider the campaigns of products. Defaults to False.
 
     Returns:
         Dict[str, Dict[str, int]]: graph instance
     """
     assert start is None or start in products
     assert end is None or end in products
-    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-    df_properties = pd.read_csv(PRODUCT_PROPERTIES, index_col='Product')
-    campaigns = set([df_properties.at[int(product), 'Campaign'] for product in products])
-    df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
-    campaigns_order = dict((campaign, df_order['Order'].to_dict()[campaign]) for campaign in campaigns)
-
-    if consider_campaigns:
-        counter = 0
-        for step in sorted(df_order['Order'].drop_duplicates().to_list()):
-            step_campaigns = campaigns.intersection(df_order[df_order['Order'] == step].index.to_list())
-            if len(step_campaigns) != 0:
-                for campaign in campaigns:
-                    campaigns_order[campaign] = counter
-                counter += 1
-    else:
-        for campaign in campaigns_order:
-            campaigns_order[campaign] = -1
+    df_matrix, campaigns_order = get_changeover_matrix(products, consider_side_constraints)
+    df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
 
     edge_weights : Dict[str, Dict[str, int]] = {}
     for product1 in products:
         edge_weights[product1] = {}
-        campaign1 = df_properties.at[int(product1), 'Campaign']
-        campaign_order1 = campaigns_order[campaign1]
         for product2 in products:
-            campaign2 = df_properties.at[int(product2), 'Campaign']
-            campaign_order2 = campaigns_order[campaign2]
-            if campaign_order2 - campaign_order1 not in [0, 1]:
-                continue
-            distance = df_matrix.at[int(product1), product2]
-            if distance < 10080:
-                if campaign1 != campaign2:
-                    distance = 10080
+            distance = df_matrix.at[product1, product2]
+            if distance < INF:
                 edge_weights[product1][product2] = distance
 
     if cyclic:
@@ -128,36 +167,34 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
 
     if start is None:
         for product in products:
-            campaign_order = campaigns_order[df_properties.at[int(product), 'Campaign']]
-            if campaign_order in [-1, 0]:
+            campaign_order = campaigns_order[df_properties.at[product, 'Campaign']]
+            if not consider_side_constraints or campaign_order == 0:
                 if cyclic:
                     edge_weights['v'][product] = 0
                 else:
                     edge_weights['start'][product] = 0
     else:
-        campaign_order = 0
-        if consider_campaigns:
-            campaign = df_properties.at[int(start), 'Campaign']
-            campaign_order = campaigns_order[campaign]
+        if consider_side_constraints:
+            campaign_order = campaigns_order[df_properties.at[start, 'Campaign']]
             assert campaign_order == 0
         if cyclic:
             edge_weights['v'][start] = 0
         else:
             edge_weights['start'][start] = 0
 
+    max_campaign = max([value for _, value in campaigns_order.items()])
     if end is None:
         for product in products:
-            campaign = df_properties.at[int(product), 'Campaign']
-            campaign_order = campaigns_order[campaign]
-            if campaign_order == len(campaigns_order):
+            campaign_order = campaigns_order[df_properties.at[product, 'Campaign']]
+            if not consider_side_constraints or campaign_order == max_campaign:
                 if cyclic:
                     edge_weights[product]['v'] = 0
                 else:
                     edge_weights[product]['end'] = 0
     else:
-        campaign = df_properties.at[int(end), 'Campaign']
-        campaign_order = campaigns_order[campaign]
-        assert campaign_order in [0, len(campaigns_order)]
+        if consider_side_constraints:
+            campaign_order = campaigns_order[df_properties.at[end, 'Campaign']]
+            assert campaign_order == max_campaign
         if cyclic:
             edge_weights[end]['v'] = 0
         else:
@@ -174,25 +211,27 @@ def create_lp_instance(products : Set[str]) -> str:
     Returns:
         str: resulting LP source code
     """
-    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
-    df_properties = pd.read_csv(PRODUCT_PROPERTIES, index_col='Product')
-    df_quantity = pd.read_csv(PRODUCT_QUANTITY, index_col='Product')
+    df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
+    df_quantity = pd.read_csv(PRODUCT_QUANTITY, dtype={'Product': str}).set_index('Product')
 
     result : str = ''
     for product in products:
         result += f'product({product}).\n'
     for product1 in products:
         for product2 in products:
-            distance = df_matrix.at[int(product1), product2]
+            distance = df_matrix.at[product1, product2]
             if distance < 10080:
                 result += f'changeover({product1}, {product2}).\n'
                 result += f'changeover_time({product1}, {product2}, {distance}).\n'
     for product in products:
-        result += f'campaign({product}, "{df_properties.at[int(product), "Campaign"]}").\n'
-        result += f'volume({product}, {df_properties.at[int(product), "Volume"]}).\n'
-        result += f'packaging({product}, "{df_properties.at[int(product), "Packaging"]}").\n'
-        result += f'quantity({product}, {df_quantity.at[int(product), "Quantity"]}).\n'
+        result += f'campaign({product}, "{df_properties.at[product, "Campaign"]}").\n'
+        result += f'volume({product}, {df_properties.at[product, "Volume"]}).\n'
+        result += f'bottleCrate({product}, "{df_properties.at[product, "BottleCrate"]}").\n'
+        result += f'packaging({product}, "{df_properties.at[product, "Packaging"]}").\n'
+        result += f'plannedPerformance({product}, {df_properties.at[product, "PlannedPerformance"]}).\n'
+        result += f'quantity({product}, {df_quantity.at[product, "Quantity"]}).\n'
     for campaign, order in df_order['Order'].items():
         result += f'campaign_order("{campaign}", {order}).\n'
 

@@ -44,8 +44,8 @@ def select_random_set_of_product(sample_size : int, run : int) -> Set[str]:
     Returns:
         Set[str]: set of products
     """
-    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-    products = [str(product) for product in df_matrix.index]
+    df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
+    products = list(df_matrix.index)
     random.seed(42)
     seed = random.randint(run * 100 + 1, (run + 1) * 100)
     random.seed(seed)
@@ -186,12 +186,12 @@ if __name__ == '__main__':
 
     # List of approaches
     approaches = [
-        # 'lp_perfect',
+        'lp_perfect',
         # 'lp_bad',
         # 'tsp',
         # 'pddl',
         # 'ilp',
-        'asp',
+        # 'asp',
     ]
 
     # Make and clean instances folders
@@ -212,8 +212,8 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = [6] # list(range(6, 72, 1))
-    runs = [0] # list(range(4))
+    numProducts = [6, 10, 15, 20] # list(range(6, 72, 1))
+    runs = list(range(4))
 
     for approach in approaches:
         timeouts[approach] = {}

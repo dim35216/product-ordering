@@ -21,9 +21,9 @@ class Modeler:
             products (Set[str]): set of products
             filename (str): name of resulting PDDL instance file
         """
-        df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-        df_properties = pd.read_csv(PRODUCT_PROPERTIES, index_col='Product')
-        campaigns = set([df_properties.at[int(product), 'Campaign'] for product in products])
+        df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
+        df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
+        campaigns = set([df_properties.at[product, 'Campaign'] for product in products])
         df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
 
         problemname = os.path.split(filename)[-1].split('.')[0]
@@ -56,14 +56,14 @@ f'''(define (problem ProductOrdering-{problemname})
             result += f'    (changeover p{product1} pend)\n'
             result += f'    (= (changeover-time p{product1} pend) 0)\n'
             for product2 in products:
-                distance = df_matrix.at[int(product1), product2]
+                distance = df_matrix.at[product1, product2]
                 if distance < 10080:
                     result += f'    (changeover p{product1} p{product2})\n'
                     result += f'    (= (changeover-time p{product1} p{product2}) {distance})\n'
         for product in products:
-            result += f'    (product-campaign p{product} "{df_properties.at[int(product), "Campaign"]}")\n'
-            result += f'    (product-campaign pstart Start)\n'
-            result += f'    (product-campaign pend End)\n'
+            result += f'    (product-campaign p{product} "{df_properties.at[product, "Campaign"]}")\n'
+        result += f'    (product-campaign pstart Start)\n'
+        result += f'    (product-campaign pend End)\n'
         for campaign in campaigns:
             result += f'    (campaign-switch-possible Start "{campaign}")\n'
         for campaign in campaigns:

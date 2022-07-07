@@ -27,3 +27,6 @@ FAST_DOWNWARD_EXE = os.path.join(PROJECT_FOLDER, 'include', './fast-downward.py'
 
 # Timeout per experiment in seconds
 TIMEOUT = 600.0
+
+# Arc length infinity
+INF = 10000000
