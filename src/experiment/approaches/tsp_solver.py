@@ -30,7 +30,7 @@ def run_concorde(products : Set[str], run : int, start : Union[str, None] = None
     Returns:
         Tuple[List[str], bool]: optimal product order, flag for timeout occurred
     """
-    edge_weights = build_graph(products, start, end, cyclic=True, consider_campaigns=True)
+    edge_weights = build_graph(products, start, end, cyclic=True, consider_side_constraints=True)
 
     start_time = time.time()
     sym_edge_weights = transform_symmetric(edge_weights)

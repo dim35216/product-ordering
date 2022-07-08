@@ -6,7 +6,7 @@ import os
 import sys
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES
+from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, INF
 
 class Modeler:
     """This class implements a modeler, which takes an instance of the Product Ordering problem
@@ -57,7 +57,7 @@ f'''(define (problem ProductOrdering-{problemname})
             result += f'    (= (changeover-time p{product1} pend) 0)\n'
             for product2 in products:
                 distance = df_matrix.at[product1, product2]
-                if distance < 10080:
+                if distance < INF:
                     result += f'    (changeover p{product1} p{product2})\n'
                     result += f'    (= (changeover-time p{product1} p{product2}) {distance})\n'
         for product in products:

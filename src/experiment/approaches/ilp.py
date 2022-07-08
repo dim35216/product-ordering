@@ -11,7 +11,7 @@ from docplex.mp.model import Model
 from docplex.mp.dvar import Var
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, \
-    PROJECT_FOLDER, TIMEOUT
+    PROJECT_FOLDER, TIMEOUT, INF
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import calculate_oct
 
@@ -56,7 +56,7 @@ def create_model(products : Set[str]) -> Tuple[Model, Dict[str, Dict[str, Var]]]
         campaign1 = df_properties.at[product1, 'Campaign']
         for product2 in products:
             distance = df_matrix.at[product1, product2]
-            if distance < 10080:
+            if distance < INF:
                 var = model.binary_var(f'x_{product1}_{product2}')
                 variables[product1][product2] = var
                 delta_plus[product1].append(var)

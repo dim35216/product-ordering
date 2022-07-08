@@ -126,13 +126,13 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     rules apply:
     If a start product is specified:
       The node V is connected with an outgoing arc to the start product with cost 0
-      To all remaining nodes, the node V is connected with an outgoing arc of cost 10080
+      To all remaining nodes, the node V is connected with an outgoing arc of cost INF
     Else:
       The node V is connected to all other nodes with an outgoing arc of cost 0
 
     If an end product is specified:
       The node V is connected with an ingoing arc to the end product with cost 0
-      To all remaining nodes, the node V is connected with an ingoing arc of cost 10080
+      To all remaining nodes, the node V is connected with an ingoing arc of cost INF
     Else:
       The node V is connected to all other nodes with an ingoing arc of cost 0
 
@@ -222,7 +222,7 @@ def create_lp_instance(products : Set[str]) -> str:
     for product1 in products:
         for product2 in products:
             distance = df_matrix.at[product1, product2]
-            if distance < 10080:
+            if distance < INF:
                 result += f'changeover({product1}, {product2}).\n'
                 result += f'changeover_time({product1}, {product2}, {distance}).\n'
     for product in products:
@@ -248,7 +248,7 @@ def create_tsp_instance(edge_weights : Dict[str, Dict[str, int]]) -> \
         Tuple[tsplib95.models.StandardProblem, List[str]]: tsp problem instance in the tsplib95 \
             format, products in fixed listed order used in the problem instance
     """
-    matrix = np.ones((len(edge_weights), len(edge_weights)), dtype=int) * 99999
+    matrix = np.ones((len(edge_weights), len(edge_weights)), dtype=int) * INF
 
     products_list = list(edge_weights)
     index_products = {}
