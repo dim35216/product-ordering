@@ -12,7 +12,7 @@ changeover(X, v) :- product(X).
 changeover_time(X, v, 0) :- product(X).
 
 rating_volume(X, Y) :- switch(X, Y), campaign(X, C), campaign(Y, C), volume(X, V), volume(Y, V),
-                       packaging(X, P1), packaging(Y, P2), P1 != P2, P1 != "Normal".
+                       packaging(X, P1), P1 != "Normal".
 
 #show rating_volume/2.
 #maximize{ 1@2, X, Y : rating_volume(X, Y) }.

@@ -11,7 +11,7 @@ from docplex.mp.model import Model
 from docplex.mp.dvar import Var
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, \
-    PROJECT_FOLDER, TIMEOUT, INF
+    PRODUCT_QUANTITY, PROJECT_FOLDER, TIMEOUT, INF
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import calculate_oct
 
@@ -28,7 +28,10 @@ def create_model(products : Set[str]) -> Tuple[Model, Dict[str, Dict[str, Var]]]
     """
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
     df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
-    numCampaigns = len(set([df_properties.at[product, 'Campaign'] for product in products]))
+    df_quantity = pd.read_csv(PRODUCT_QUANTITY, dtype={'Product': str}).set_index('Product')
+    campaigns = set([df_properties.at[product, 'Campaign'] for product in products])
+    campaigns.add('v')
+    numCampaigns = len(campaigns)
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
     campaigns_order = df_order['Order'].to_dict()
 
@@ -47,12 +50,12 @@ def create_model(products : Set[str]) -> Tuple[Model, Dict[str, Dict[str, Var]]]
         variables['v'][product1] = var_v_product1
         delta_plus['v'].append(var_v_product1)
         delta_minus[product1].append(var_v_product1)
-        campaigns_switch['v'] = {product1: 0}
+        campaigns_switch['v'] = {product1: 1}
         var_product1_v = model.binary_var(f'x_{product1}_v')
         variables[product1] = {'v': var_product1_v}
         delta_minus['v'].append(var_product1_v)
         delta_plus[product1].append(var_product1_v)
-        campaigns_switch[product1] = {'v': 0}
+        campaigns_switch[product1] = {'v': 1}
         campaign1 = df_properties.at[product1, 'Campaign']
         for product2 in products:
             distance = df_matrix.at[product1, product2]
@@ -103,12 +106,41 @@ def create_model(products : Set[str]) -> Tuple[Model, Dict[str, Dict[str, Var]]]
 
     linear_expr = model.linear_expr()
     for product1 in variables:
-        if product1 != 'v':
-            for product2 in variables[product1]:
-                if product2 != 'v':
-                    coeff = campaigns_switch[product1][product2]
-                    linear_expr.add_term(variables[product1][product2], coeff)
-    model.add_constraint(linear_expr == numCampaigns - 1, f'campaigns_switch')
+        for product2 in variables[product1]:
+            coeff = campaigns_switch[product1][product2]
+            linear_expr.add_term(variables[product1][product2], coeff)
+    model.add_constraint(linear_expr == numCampaigns, f'campaigns_switch')
+
+    for campaign in campaigns:
+        max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
+            if campaign == df_properties.at[product, 'Campaign']])
+        temp_products = [product for product in products
+            if campaign == df_properties.at[product, 'Campaign']
+                and df_properties.at[product1, 'Packaging'] == 'Normal']
+        if len(temp_products) > 0:
+            linear_expr = model.linear_expr()
+            for product1 in temp_products:
+                if df_quantity.at[product1, 'Quantity'] == max_quantity:
+                    for product2 in variables[product1]:
+                        if df_properties.at[product2, 'Campaign'] != campaign:
+                            linear_expr.add_term(variables[product1][product2], 1)
+            model.add_constraint(linear_expr == 1, 'max_quantity')
+
+    for campaign in campaigns:
+        temp_products1 = [product for product in products
+            if campaign == df_properties.at[product, 'Campaign']
+                and df_properties.at[product1, 'Packaging'] != 'Normal']
+        for product1 in temp_products1:
+            volume1 = df_properties.at[product1, 'Volume']
+            temp_products2 = [product for product in products
+                if campaign == df_properties.at[product, 'Campaign']
+                    and volume1 == df_properties.at[product, 'Volume']]
+            if len(temp_products2) > 0:
+                linear_expr = model.linear_expr()
+                for product2 in temp_products2:
+                    for product2 in variables[product1]:
+                        linear_expr.add_term(variables[product1][product2], 1)
+                model.add_constraint(linear_expr == 1, 'same_volume')
 
     linear_expr = model.linear_expr()
     for product1 in variables:

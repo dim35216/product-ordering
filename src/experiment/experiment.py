@@ -86,6 +86,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         },
         'Variables': math.nan,
         'Constraints': math.nan,
+        'Order': [],
         'Timeout': False
     }
 
@@ -98,6 +99,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['C'] = calculate_oct(order)
         if not timeout:
             result['ClingoStats'] = stats
+        result['Order'] = order
         result['Timeout'] = timeout
 
     elif approach == 'lp_bad':
@@ -109,6 +111,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['C'] = calculate_oct(order)
         if not timeout:
             result['ClingoStats'] = stats
+        result['Order'] = order
         result['Timeout'] = timeout
 
     elif approach == 'tsp':
@@ -117,6 +120,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         temp = time.time() - temp
         result['Time'] = temp
         result['C'] = calculate_oct(order)
+        result['Order'] = order
         result['Timeout'] = timeout
 
     elif approach == 'pddl':
@@ -126,6 +130,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['Time'] = temp
         result['OptValue'] = opt_value
         result['C'] = calculate_oct(order)
+        result['Order'] = order
         result['Timeout'] = timeout
 
     elif approach == 'ilp':
@@ -136,6 +141,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['C'] = calculate_oct(order)
         result['Variables'] = num_variables
         result['Constraints'] = num_constraints
+        result['Order'] = order
         result['Timeout'] = timeout
 
     elif approach == 'asp':
@@ -147,6 +153,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['C'] = calculate_oct(order)
         if not timeout:
             result['ClingoStats'] = stats
+        result['Order'] = order
         result['Timeout'] = timeout
 
     else:
@@ -175,6 +182,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
                 str(result['ClingoStats']['Models']),
                 str(result['Variables']),
                 str(result['Constraints']),
+                str(result['Order']),
                 str(result['Timeout'])
             ])
         ))

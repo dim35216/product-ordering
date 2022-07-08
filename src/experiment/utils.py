@@ -86,14 +86,12 @@ def get_changeover_matrix(products : Set[str], consider_side_constraints : bool 
             campaign2 = df_properties.at[product2, 'Campaign']
             campaign_order2 = campaigns_order[campaign2]
             volume2 = df_properties.at[product2, 'Volume']
-            packaging2 = df_properties.at[product2, 'Packaging']
 
             if distance < INF:
                 if consider_side_constraints:
                     rated = False
                     if campaign1 == campaign2 \
                         and volume1 == volume2 \
-                        and packaging1 != packaging2 \
                         and packaging1 != 'Normal':
                         rated = True
 
