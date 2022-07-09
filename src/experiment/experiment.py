@@ -8,7 +8,7 @@ Ordering problem. These approaches are:
     combination of start and end product
 - Using the ILP approach
 """
-from typing import Set, Dict, Any
+from typing import *
 import logging
 import math
 import random
@@ -25,7 +25,7 @@ from approaches.ilp import run_ilp
 from approaches.pddl_solver import run_fast_downward
 from utils import setup_logger, calculate_oct
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from constants.constants import CHANGEOVER_MATRIX, PROJECT_FOLDER, RESULTS_FILE
+from constants.constants import CHANGEOVER_MATRIX, INSTANCES_FOLDER, RESULTS_FILE
 
 LOGGER = logging.getLogger('experiment')
 
@@ -52,7 +52,8 @@ def select_random_set_of_product(sample_size : int, run : int) -> Set[str]:
     samples = set(random.sample(products, sample_size))
     return samples
 
-def run_experiment(sample_size : int, run : int, approach : str) -> None:
+def run_experiment(sample_size : int, run : int, approach : str, \
+    consider_constraints : Union[None, int] = None) -> None:
     """Run an experiment instance for the given input, which is independent from the other
     instances and can be runned in parallel. The result of the experiment is then just appended
     to the results file
@@ -64,7 +65,8 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
     """
     setup_logger()
 
-    LOGGER.info('run_experiment(%s, %s, %s) started', sample_size, run, approach)
+    LOGGER.info('run_experiment(%s, %s, %s, %s) started', sample_size, run, approach, \
+        consider_constraints)
     products = select_random_set_of_product(sample_size, run)
     LOGGER.debug('product samples: %s', str(products))
 
@@ -90,9 +92,10 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         'Timeout': False
     }
 
-    if approach == 'lp_perfect':
+    if approach == 'lp_normal':
         temp = time.time()
-        opt_value, order, stats, timeout = run_clingo(products, run, encoding='perfect')
+        opt_value, order, stats, timeout = run_clingo(products, run, encoding='normal', \
+            consider_constraints=consider_constraints)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
@@ -102,9 +105,10 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
         result['Order'] = order
         result['Timeout'] = timeout
 
-    elif approach == 'lp_bad':
+    elif approach == 'lp_advanced':
         temp = time.time()
-        opt_value, order, stats, timeout = run_clingo(products, run, encoding='bad')
+        opt_value, order, stats, timeout = run_clingo(products, run, encoding='advanced', \
+            consider_constraints=consider_constraints)
         temp = time.time() - temp
         result['Time'] = temp
         result['OptValue'] = opt_value
@@ -116,7 +120,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
 
     elif approach == 'tsp':
         temp = time.time()
-        order, timeout = run_concorde(products, run)
+        order, timeout = run_concorde(products, run, consider_constraints)
         temp = time.time() - temp
         result['Time'] = temp
         result['C'] = calculate_oct(order)
@@ -135,7 +139,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
 
     elif approach == 'ilp':
         temp = time.time()
-        order, num_variables, num_constraints, timeout = run_ilp(products)
+        order, num_variables, num_constraints, timeout = run_ilp(products, consider_constraints)
         temp = time.time() - temp
         result['Time'] = temp
         result['C'] = calculate_oct(order)
@@ -159,7 +163,8 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
     else:
         LOGGER.info('Approach %s is unknown', approach)
 
-    timeouts[approach][sample_size] = timeouts[approach][sample_size] and result['Timeout']
+    timeouts[approach][sample_size][consider_constraints] = \
+        timeouts[approach][sample_size][consider_constraints] and result['Timeout']
 
     with open(RESULTS_FILE, 'a', encoding='utf-8') as filehandle:
         filehandle.write('{}\n'.format(
@@ -167,6 +172,7 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
                 str(sample_size),
                 str(run),
                 approach,
+                str(consider_constraints),
                 str(result['Time']),
                 str(result['OptValue']),
                 str(result['C']),
@@ -187,15 +193,16 @@ def run_experiment(sample_size : int, run : int, approach : str) -> None:
             ])
         ))
     
-    LOGGER.info('run_experiment(%s, %s, %s) ended', sample_size, run, approach)
+    LOGGER.info('run_experiment(%s, %s, %s, %s) ended', sample_size, run, approach, \
+        consider_constraints)
 
 if __name__ == '__main__':
     setup_logger()
 
     # List of approaches
     approaches = [
-        'lp_perfect',
-        # 'lp_bad',
+        # 'lp_normal',
+        'lp_advanced',
         # 'tsp',
         # 'pddl',
         # 'ilp',
@@ -204,11 +211,10 @@ if __name__ == '__main__':
 
     # Make and clean instances folders
     subfolders = ['tsp', 'pddl', 'lp']
-    instances_folder = os.path.join(PROJECT_FOLDER, 'experiments', 'instances')
-    if not os.path.isdir(instances_folder):
-        os.mkdir(instances_folder)
+    if not os.path.isdir(INSTANCES_FOLDER):
+        os.mkdir(INSTANCES_FOLDER)
     for subfolder in subfolders:
-        folder = os.path.join(instances_folder, subfolder)
+        folder = os.path.join(INSTANCES_FOLDER, subfolder)
         if not os.path.isdir(folder):
             os.mkdir(folder)
         else:
@@ -220,19 +226,20 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = [6, 10, 15, 20] # list(range(6, 72, 1))
+    numProducts = [6] # list(range(6, 72, 1))
     runs = list(range(4))
-    consider_constraints_options = [4]
+    consider_constraints_options = [0, 1, 2, 3, 4]
 
     for approach in approaches:
         timeouts[approach] = {}
         for n in numProducts:
+            timeouts[approach][n] = {}
             for consider_constraints in consider_constraints_options:
-                timeouts[approach][n] = True
+                timeouts[approach][n][consider_constraints] = True
                 Parallel(n_jobs=-1, require='sharedmem') \
                     (delayed(run_experiment)(n, run, approach, consider_constraints) \
                     for run in runs)
-                if timeouts[approach][n]:
+                if timeouts[approach][n][consider_constraints]:
                     LOGGER.info('All %d runs for approach %s and the considered constraints' + \
                         'option %s exceeded the time limit; the sample size %d won\'t be ' + \
                         'increased anymore', len(runs), approach, n)

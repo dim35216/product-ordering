@@ -12,6 +12,7 @@ changeover(X, v) :- product(X).
 changeover_time(X, v, 0) :- product(X).
 
 % Generate
+impossible(v, v).
 { switch(X, Y) : changeover(X, Y), not impossible(X, Y) } = 1 :- product(X).
 { switch(X, Y) : changeover(X, Y), not impossible(X, Y) } = 1 :- product(Y).
 
