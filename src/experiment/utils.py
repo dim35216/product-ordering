@@ -8,6 +8,8 @@ import sys
 import clingo
 import pandas as pd
 import numpy as np
+
+from experiment.experiment import LOGGER
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, \
     PRODUCT_QUANTITY, INF
@@ -51,7 +53,7 @@ def calculate_oct(order: List[str], occurences : Union[Dict[str, int], None] = N
             changeover_time += (num - 1) * 15
     return changeover_time
 
-def get_changeover_matrix(products : Set[str], consider_side_constraints : bool = False) \
+def get_changeover_matrix(products : Set[str], consider_constraints : Union[None, int] = None) \
     -> Tuple[pd.DataFrame, Dict[str, int]]:
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
     df_matrix = df_matrix.loc[sorted(list(products)), sorted(list(products))]
@@ -61,7 +63,7 @@ def get_changeover_matrix(products : Set[str], consider_side_constraints : bool 
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
 
     campaigns_order = {}
-    if consider_side_constraints:
+    if consider_constraints is None or consider_constraints >= 1:
         counter = 0
         for step in sorted(df_order['Order'].drop_duplicates().to_list()):
             step_campaigns = campaigns.intersection(df_order[df_order['Order'] == step].index.to_list())
@@ -88,21 +90,24 @@ def get_changeover_matrix(products : Set[str], consider_side_constraints : bool 
             volume2 = df_properties.at[product2, 'Volume']
 
             if distance < INF:
-                if consider_side_constraints:
-                    rated = False
-                    if campaign1 == campaign2 \
-                        and volume1 == volume2 \
-                        and packaging1 != 'Normal':
-                        rated = True
+                rated = False
 
+                if consider_constraints is None or consider_constraints >= 2:
                     if campaign1 != campaign2 \
                         and quantity1 == max_quantity \
                         and packaging1 == 'Normal':
                         rated = True
-                    
-                    if not rated:
-                        df_matrix.at[product1, product2] *= 1000
 
+                if consider_constraints is None or consider_constraints >= 3:
+                    if campaign1 == campaign2 \
+                        and volume1 == volume2 \
+                        and packaging1 != 'Normal':
+                        rated = True
+                    
+                if not rated:
+                    df_matrix.at[product1, product2] *= 1000
+
+                if consider_constraints is None or consider_constraints >= 1:
                     if campaign1 != campaign2:
                         df_matrix.at[product1, product2] += 1000000
 
@@ -113,7 +118,7 @@ def get_changeover_matrix(products : Set[str], consider_side_constraints : bool 
 
 def build_graph(products : Set[str], start : Union[str, None] = None, \
     end : Union[str, None] = None, cyclic : bool = False,
-    consider_side_constraints : bool = False) \
+    consider_constraints : Union[None, int] = None) \
     -> Union[List[Dict[str, Dict[str, int]]], Dict[str, Dict[str, int]]]:
     """Building a graph instance for the given changeover matrix, whereas only the products in
     the given set are taken into account, such that the graph instance won't be bigger than
@@ -146,8 +151,11 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     """
     assert start is None or start in products
     assert end is None or end in products
-    df_matrix, campaigns_order = get_changeover_matrix(products, consider_side_constraints)
+    df_matrix, campaigns_order = get_changeover_matrix(products, consider_constraints)
     df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
+
+    if consider_constraints >= 4:
+        LOGGER.error('These constraints haven\'t been implemented yet!')
 
     edge_weights : Dict[str, Dict[str, int]] = {}
     for product1 in products:
@@ -166,13 +174,14 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     if start is None:
         for product in products:
             campaign_order = campaigns_order[df_properties.at[product, 'Campaign']]
-            if not consider_side_constraints or campaign_order == 0:
+            if not (consider_constraints is None or consider_constraints >= 1) \
+                or campaign_order == 0:
                 if cyclic:
                     edge_weights['v'][product] = 0
                 else:
                     edge_weights['start'][product] = 0
     else:
-        if consider_side_constraints:
+        if consider_constraints is None or consider_constraints >= 1:
             campaign_order = campaigns_order[df_properties.at[start, 'Campaign']]
             assert campaign_order == 0
         if cyclic:
@@ -184,13 +193,14 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     if end is None:
         for product in products:
             campaign_order = campaigns_order[df_properties.at[product, 'Campaign']]
-            if not consider_side_constraints or campaign_order == max_campaign:
+            if not (consider_constraints is None or consider_constraints >= 1) \
+                or campaign_order == max_campaign:
                 if cyclic:
                     edge_weights[product]['v'] = 0
                 else:
                     edge_weights[product]['end'] = 0
     else:
-        if consider_side_constraints:
+        if consider_constraints is None or consider_constraints >= 1:
             campaign_order = campaigns_order[df_properties.at[end, 'Campaign']]
             assert campaign_order == max_campaign
         if cyclic:

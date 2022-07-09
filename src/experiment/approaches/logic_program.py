@@ -10,8 +10,9 @@ import os
 import sys
 import clingo
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import PERFECT_PO_ENCODING, BAD_PO_ENCODING, INSTANCES_FOLDER, \
-    PROJECT_FOLDER, TIMEOUT
+from constants.constants import PO_ENCODING, NORMAL_OPT_ENCODING, ADVANCED_OPT_ENCODING, \
+    CONSTRAINT_1_ENCODING, CONSTRAINT_2_ENCODING, CONSTRAINT_3_ENCODING, CONSTRAINT_4_ENCODING, \
+    INSTANCES_FOLDER, PROJECT_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
 from src.experiment.utils import create_lp_instance, ModelHelper
 
@@ -64,22 +65,21 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
 
     return order
 
-def run_clingo(products : Set[str], run : int, encoding : str) -> \
-    Tuple[int, List[str], Dict[str, Any], bool]:
-    """Computing the Product Ordering problem as a logic program using the perfect TSP encoding;
-    therefore the Product Ordering problem instance has to transformed into a TSP instance using
-    a little additional logic program
+def run_clingo(products : Set[str], run : int, encoding : str, \
+    consider_constraints : Union[None, int] = None) -> Tuple[int, List[str], Dict[str, Any], bool]:
+    """Computing the Product Ordering problem as a logic program using the normal or advanced
+    encoding for the optimization directive
 
     Args:
         products (Set[str]): set of products
         run (int): id of run
-        encoding (str): perfect or bad ASP encoding
+        encoding (str): usage of normal or advanced encoding for optimization directive
 
     Returns:
         Tuple[int, List[str], Dict[str, Any], bool]: objective value, optimal product order, \
             dictionary of clingo statistics, flag for timeout occurred
     """
-    assert encoding in ['perfect', 'bad']
+    assert encoding in ['normal', 'advanced']
     instance = create_lp_instance(products)
 
     filename = os.path.join(INSTANCES_FOLDER, 'lp', f'instance_{len(products)}_{run}.lp')
@@ -88,10 +88,19 @@ def run_clingo(products : Set[str], run : int, encoding : str) -> \
             filehandle.write(instance)
 
     ctl = clingo.Control()
-    if encoding == 'perfect':
-        ctl.load(PERFECT_PO_ENCODING)
+    ctl.load(PO_ENCODING)
+    if encoding == 'normal':
+        ctl.load(NORMAL_OPT_ENCODING)
     else:
-        ctl.load(BAD_PO_ENCODING)
+        ctl.load(ADVANCED_OPT_ENCODING)
+    if consider_constraints is None or consider_constraints >= 1:
+         ctl.load(CONSTRAINT_1_ENCODING)
+    if consider_constraints is None or consider_constraints >= 2:
+         ctl.load(CONSTRAINT_2_ENCODING)
+    if consider_constraints is None or consider_constraints >= 3:
+         ctl.load(CONSTRAINT_3_ENCODING)
+    if consider_constraints is None or consider_constraints >= 4:
+         ctl.load(CONSTRAINT_4_ENCODING)
     ctl.add('base', [], instance)
     ctl.ground([('base', [])])
 

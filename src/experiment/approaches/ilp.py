@@ -17,7 +17,8 @@ from src.experiment.utils import calculate_oct
 
 LOGGER = logging.getLogger('experiment')
 
-def create_model(products : Set[str]) -> Tuple[Model, Dict[str, Dict[str, Var]]]:
+def create_model(products : Set[str], consider_constraints : Union[None, int] = None) \
+    -> Tuple[Model, Dict[str, Dict[str, Var]]]:
     """Creating an ILP model of the Product Ordering problem for a Google OR-Tools LP solver
 
     Args:
@@ -34,6 +35,9 @@ def create_model(products : Set[str]) -> Tuple[Model, Dict[str, Dict[str, Var]]]
     numCampaigns = len(campaigns)
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
     campaigns_order = df_order['Order'].to_dict()
+
+    if consider_constraints >= 4:
+        LOGGER.error('These constraints haven\'t been implemented yet!')
 
     model = Model('product-ordering')
 
@@ -93,54 +97,57 @@ def create_model(products : Set[str]) -> Tuple[Model, Dict[str, Dict[str, Var]]]
         model.add_constraint(0 <= linear_expr, f'subtour_elimination_ge_{subset}')
         model.add_constraint(linear_expr <= len(subset) - 1, f'subtour_elimination_le_{subset}')
 
-    for product1 in variables:
-        if product1 != 'v':
-            campaigns_order1 = campaigns_order[df_properties.at[product1, 'Campaign']]
+    if consider_constraints is None or consider_constraints >= 1:
+        for product1 in variables:
+            if product1 != 'v':
+                campaigns_order1 = campaigns_order[df_properties.at[product1, 'Campaign']]
+                for product2 in variables[product1]:
+                    if product2 != 'v':
+                        linear_expr = model.linear_expr()
+                        campaigns_order2 = campaigns_order[df_properties.at[product2, 'Campaign']]
+                        coeff = campaigns_order2 - campaigns_order1
+                        linear_expr.add_term(variables[product1][product2], coeff)
+                        model.add_constraint(0 <= linear_expr, f'campaigns_order_{product1}_{product2}')
+
+        linear_expr = model.linear_expr()
+        for product1 in variables:
             for product2 in variables[product1]:
-                if product2 != 'v':
-                    linear_expr = model.linear_expr()
-                    campaigns_order2 = campaigns_order[df_properties.at[product2, 'Campaign']]
-                    coeff = campaigns_order2 - campaigns_order1
-                    linear_expr.add_term(variables[product1][product2], coeff)
-                    model.add_constraint(0 <= linear_expr, f'campaigns_order_{product1}_{product2}')
+                coeff = campaigns_switch[product1][product2]
+                linear_expr.add_term(variables[product1][product2], coeff)
+        model.add_constraint(linear_expr == numCampaigns, f'campaigns_switch')
 
-    linear_expr = model.linear_expr()
-    for product1 in variables:
-        for product2 in variables[product1]:
-            coeff = campaigns_switch[product1][product2]
-            linear_expr.add_term(variables[product1][product2], coeff)
-    model.add_constraint(linear_expr == numCampaigns, f'campaigns_switch')
-
-    for campaign in campaigns:
-        max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
-            if campaign == df_properties.at[product, 'Campaign']])
-        temp_products = [product for product in products
-            if campaign == df_properties.at[product, 'Campaign']
-                and df_properties.at[product1, 'Packaging'] == 'Normal']
-        if len(temp_products) > 0:
-            linear_expr = model.linear_expr()
-            for product1 in temp_products:
-                if df_quantity.at[product1, 'Quantity'] == max_quantity:
-                    for product2 in variables[product1]:
-                        if df_properties.at[product2, 'Campaign'] != campaign:
-                            linear_expr.add_term(variables[product1][product2], 1)
-            model.add_constraint(linear_expr == 1, 'max_quantity')
-
-    for campaign in campaigns:
-        temp_products1 = [product for product in products
-            if campaign == df_properties.at[product, 'Campaign']
-                and df_properties.at[product1, 'Packaging'] != 'Normal']
-        for product1 in temp_products1:
-            volume1 = df_properties.at[product1, 'Volume']
-            temp_products2 = [product for product in products
+    if consider_constraints is None or consider_constraints >= 2:
+        for campaign in campaigns:
+            max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
+                if campaign == df_properties.at[product, 'Campaign']])
+            temp_products = [product for product in products
                 if campaign == df_properties.at[product, 'Campaign']
-                    and volume1 == df_properties.at[product, 'Volume']]
-            if len(temp_products2) > 0:
+                    and df_properties.at[product1, 'Packaging'] == 'Normal']
+            if len(temp_products) > 0:
                 linear_expr = model.linear_expr()
-                for product2 in temp_products2:
-                    for product2 in variables[product1]:
-                        linear_expr.add_term(variables[product1][product2], 1)
-                model.add_constraint(linear_expr == 1, 'same_volume')
+                for product1 in temp_products:
+                    if df_quantity.at[product1, 'Quantity'] == max_quantity:
+                        for product2 in variables[product1]:
+                            if df_properties.at[product2, 'Campaign'] != campaign:
+                                linear_expr.add_term(variables[product1][product2], 1)
+                model.add_constraint(linear_expr == 1, 'max_quantity')
+
+    if consider_constraints is None or consider_constraints >= 3:
+        for campaign in campaigns:
+            temp_products1 = [product for product in products
+                if campaign == df_properties.at[product, 'Campaign']
+                    and df_properties.at[product1, 'Packaging'] != 'Normal']
+            for product1 in temp_products1:
+                volume1 = df_properties.at[product1, 'Volume']
+                temp_products2 = [product for product in products
+                    if campaign == df_properties.at[product, 'Campaign']
+                        and volume1 == df_properties.at[product, 'Volume']]
+                if len(temp_products2) > 0:
+                    linear_expr = model.linear_expr()
+                    for product2 in temp_products2:
+                        for product2 in variables[product1]:
+                            linear_expr.add_term(variables[product1][product2], 1)
+                    model.add_constraint(linear_expr == 1, 'same_volume')
 
     linear_expr = model.linear_expr()
     for product1 in variables:
@@ -201,7 +208,8 @@ def extract_order(variables : Dict[str, Dict[str, Var]]) -> List[str]:
 
     return order
 
-def run_ilp(products : Set[str]) -> Tuple[List[str], int, int, bool]:
+def run_ilp(products : Set[str], consider_constraints : Union[None, int] = None) \
+    -> Tuple[List[str], int, int, bool]:
     """Computing the Product Ordering problem as an ILP using the Python API of CPLEX
 
     Args:
@@ -211,7 +219,7 @@ def run_ilp(products : Set[str]) -> Tuple[List[str], int, int, bool]:
         Tuple[List[str], int, int, bool]: minimal overall changeover time, optimal product order, \
             number of variables, number of constraints, flag for timeout occurred
     """
-    model, variables = create_model(products)
+    model, variables = create_model(products, consider_constraints)
 
     model.set_time_limit(TIMEOUT)
     solve_solution = model.solve()

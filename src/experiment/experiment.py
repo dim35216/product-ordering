@@ -222,14 +222,18 @@ if __name__ == '__main__':
 
     numProducts = [6, 10, 15, 20] # list(range(6, 72, 1))
     runs = list(range(4))
+    consider_constraints_options = [4]
 
     for approach in approaches:
         timeouts[approach] = {}
         for n in numProducts:
-            timeouts[approach][n] = True
-            Parallel(n_jobs=-1, require='sharedmem')(delayed(run_experiment)(n, run, approach) \
-                for run in runs)
-            if timeouts[approach][n]:
-                LOGGER.info('All %d runs for approach %s exceeded the time limit; the sample ' + \
-                    'size %d won\'t be increased anymore', len(runs), approach, n)
-                break
+            for consider_constraints in consider_constraints_options:
+                timeouts[approach][n] = True
+                Parallel(n_jobs=-1, require='sharedmem') \
+                    (delayed(run_experiment)(n, run, approach, consider_constraints) \
+                    for run in runs)
+                if timeouts[approach][n]:
+                    LOGGER.info('All %d runs for approach %s and the considered constraints' + \
+                        'option %s exceeded the time limit; the sample size %d won\'t be ' + \
+                        'increased anymore', len(runs), approach, n)
+                    break

@@ -16,7 +16,8 @@ from src.experiment.utils import calculate_oct, build_graph, create_tsp_instance
 LOGGER = logging.getLogger('experiment')
 
 def run_concorde(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[List[str], bool]:
+    end : Union[str, None] = None, consider_constraints : Union[None, int] = None) \
+    -> Tuple[List[str], bool]:
     """Computing the Product Ordering problem using the concorde tsp solver. Therefore it's
     necessary to transform the asymmetric problem instance to a symmetric one, and save the
     instance in the tsplib95 format.
@@ -30,7 +31,7 @@ def run_concorde(products : Set[str], run : int, start : Union[str, None] = None
     Returns:
         Tuple[List[str], bool]: optimal product order, flag for timeout occurred
     """
-    edge_weights = build_graph(products, start, end, cyclic=True, consider_side_constraints=True)
+    edge_weights = build_graph(products, start, end, cyclic=True, consider_constraints=consider_constraints)
 
     start_time = time.time()
     sym_edge_weights = transform_symmetric(edge_weights)
