@@ -30,7 +30,7 @@ from constants.constants import CHANGEOVER_MATRIX, INSTANCES_FOLDER, RESULTS_FIL
 LOGGER = logging.getLogger('experiment')
 
 # Dict of flags for timeouts occurred
-timeouts : Dict[str, Dict[int, bool]] = {}
+timeouts : Dict[Union[None, int], Dict[str, Dict[int, bool]]] = {}
 
 def select_random_set_of_product(sample_size : int, run : int) -> Set[str]:
     """Auxiliary function for selecting a random set of n products out of all products in the
@@ -62,6 +62,9 @@ def run_experiment(sample_size : int, run : int, approach : str, \
         sample_size (int): number of products
         run (int): id of run
         approach (str): solving approach
+        consider_constraints (Union[None, int], optional): Indicating which constraints are taken \
+            into account. For 0 no additional constraints are considered, for None all are \
+            considered. Defaults to None.
     """
     setup_logger()
 
@@ -192,7 +195,7 @@ def run_experiment(sample_size : int, run : int, approach : str, \
                 str(result['Timeout'])
             ])
         ))
-    
+
     LOGGER.info('run_experiment(%s, %s, %s, %s) ended', sample_size, run, approach, \
         consider_constraints)
 

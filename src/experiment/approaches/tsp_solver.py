@@ -1,5 +1,5 @@
 """Approach for solving the Product Ordering approach:
-Interpretation of problem instance as TSP and usage of the concorde tsp solver
+Interpretation of problem instance as TSP and usage of the TSP solver Concorde
 """
 from typing import *
 import logging
@@ -45,7 +45,9 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
         start (Union[str, None], optional): start product. Defaults to None.
         end (Union[str, None], optional): end product. Defaults to None.
         cyclic (bool, optional): model as cyclic graph instance. Defaults to False.
-        consider_side_constraints (bool, optional): consider the campaigns of products. Defaults to False.
+        consider_constraints (Union[None, int], optional): Indicating which constraints are taken \
+            into account. For 0 no additional constraints are considered, for None all are \
+            considered. Defaults to None.
 
     Returns:
         Dict[str, Dict[str, int]]: graph instance
@@ -55,7 +57,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     df_matrix, campaigns_order = get_changeover_matrix(products, consider_constraints)
     df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
 
-    if consider_constraints >= 4:
+    if consider_constraints is not None and consider_constraints >= 4:
         LOGGER.error('These constraints haven\'t been implemented yet!')
 
     edge_weights : Dict[str, Dict[str, int]] = {}
@@ -108,7 +110,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
             edge_weights[end]['v'] = 0
         else:
             edge_weights[end]['end'] = 0
-    
+
     return edge_weights
 
 def run_concorde(products : Set[str], run : int, consider_constraints : Union[None, int] = None) \
@@ -120,8 +122,9 @@ def run_concorde(products : Set[str], run : int, consider_constraints : Union[No
     Args:
         products (Set[str]): set of products
         run (int): id of run
-        start (Union[str, None], optional): start product. Defaults to None.
-        end (Union[str, None], optional): end product. Defaults to None.
+        consider_constraints (Union[None, int], optional): Indicating which constraints are taken \
+            into account. For 0 no additional constraints are considered, for None all are \
+            considered. Defaults to None.
 
     Returns:
         Tuple[List[str], bool]: optimal product order, flag for timeout occurred
@@ -140,7 +143,8 @@ def run_concorde(products : Set[str], run : int, consider_constraints : Union[No
 
     try:
         args = [CONCORDE_EXE, '-f', '-x', '-o', filename_sol, filename_tsp]
-        subprocess.run(args, capture_output=True, text=True, timeout=TIMEOUT - time.time() + start_time)
+        subprocess.run(args, capture_output=True, text=True, \
+            timeout=TIMEOUT - time.time() + start_time)
     except subprocess.TimeoutExpired:
         LOGGER.info('The time limit is exceeded.')
         return [], True

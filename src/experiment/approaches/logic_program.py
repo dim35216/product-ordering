@@ -1,6 +1,6 @@
 """Approach for solving the Product Ordering approach:
 Interpretation of problem instance as TSP, transformation into a linear program and usage of
-perfect and bad encoding
+encoding with normal or advanced optimization directive
 """
 from typing import *
 import logging
@@ -74,6 +74,9 @@ def run_clingo(products : Set[str], run : int, encoding : str, \
         products (Set[str]): set of products
         run (int): id of run
         encoding (str): usage of normal or advanced encoding for optimization directive
+        consider_constraints (Union[None, int], optional): Indicating which constraints are taken \
+            into account. For 0 no additional constraints are considered, for None all are \
+            considered. Defaults to None.
 
     Returns:
         Tuple[int, List[str], Dict[str, Any], bool]: objective value, optimal product order, \

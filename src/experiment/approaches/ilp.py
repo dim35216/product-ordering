@@ -19,10 +19,14 @@ LOGGER = logging.getLogger('experiment')
 
 def create_model(products : Set[str], consider_constraints : Union[None, int] = None) \
     -> Tuple[Model, Dict[str, Dict[str, Var]]]:
-    """Creating an ILP model of the Product Ordering problem for a Google OR-Tools LP solver
+    """Creating an ILP model of the Product Ordering problem for the Python API DOCplex for the \
+    MIP solver CPLEX
 
     Args:
         products (Set[str]): set of products
+        consider_constraints (Union[None, int], optional): Indicating which constraints are taken \
+            into account. For 0 no additional constraints are considered, for None all are \
+            considered. Defaults to None.
 
     Returns:
         Tuple[Model, Dict[str, Dict[str, Var]]]: DOcplex model and dictionary of all variables
@@ -36,7 +40,7 @@ def create_model(products : Set[str], consider_constraints : Union[None, int] = 
     df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
     campaigns_order = df_order['Order'].to_dict()
 
-    if consider_constraints >= 4:
+    if consider_constraints is not None and consider_constraints >= 4:
         LOGGER.error('These constraints haven\'t been implemented yet!')
 
     model = Model('product-ordering')

@@ -2,12 +2,12 @@
 """
 from typing import *
 import logging
-import tsplib95
 import os
 import sys
 import clingo
 import pandas as pd
 import numpy as np
+import tsplib95
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, \
@@ -54,6 +54,19 @@ def calculate_oct(order: List[str], occurences : Union[Dict[str, int], None] = N
 
 def get_changeover_matrix(products : Set[str], consider_constraints : Union[None, int] = None) \
     -> Tuple[pd.DataFrame, Dict[str, int]]:
+    """Fetching the changeover matrix from the CSV file and apply modification regarding the
+    constraints on it
+
+    Args:
+        products (Set[str]): set of products
+        consider_constraints (Union[None, int], optional): Indicating which constraints are taken \
+            into account. For 0 no additional constraints are considered, for None all are \
+            considered. Defaults to None.
+
+    Returns:
+        Tuple[pd.DataFrame, Dict[str, int]]: modified changeover matrix as DataFrame, campaigns \
+            order
+    """
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
     df_matrix = df_matrix.loc[sorted(list(products)), sorted(list(products))]
     df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
@@ -102,7 +115,7 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
                         and volume1 == volume2 \
                         and packaging1 != 'Normal':
                         rated = True
-                    
+
                 if not rated:
                     df_matrix.at[product1, product2] *= 1000
 
@@ -112,7 +125,7 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
 
                     if campaign_order2 - campaign_order1 not in [0, 1]:
                         df_matrix.at[product1, product2] = INF
-    
+
     return df_matrix, campaigns_order
 
 def create_lp_instance(products : Set[str]) -> str:
@@ -170,7 +183,7 @@ def create_tsp_instance(edge_weights : Dict[str, Dict[str, int]]) -> \
     for product1 in edge_weights:
         for product2, value in edge_weights[product1].items():
             matrix[index_products[product1]][index_products[product2]] = value
-    
+
     problem = tsplib95.models.StandardProblem(
         type='TSP',
         edge_weight_type='EXPLICIT',
@@ -220,7 +233,7 @@ def interpret_tsp_solution(filename : str, products_list : List[str]) -> List[st
         temp = temp[1:] + ['v']
         temp.reverse()
     assert len(temp) % 2 == 0
-    
+
     order = []
     for i in range(len(temp) // 2):
         assert temp[2 * i] + '_v' == temp[2 * i + 1]
@@ -274,14 +287,16 @@ def transform_symmetric(edge_weights : Dict[str, Dict[str, int]]) -> Dict[str, D
     return sym_edge_weights
 
 class ModelHelper():
-        def __init__(self):
-            self.symbols = None
-            self.exhausted = False
-            self.optimal = False
+    """Auxiliary class for the solving with the Python API of clingo
+    """
+    def __init__(self):
+        self.symbols = None
+        self.exhausted = False
+        self.optimal = False
 
-        def on_model(self, model : clingo.Model):
-            self.symbols = model.symbols(shown=True)
+    def on_model(self, model : clingo.Model):
+        self.symbols = model.symbols(shown=True)
 
-        def on_finish(self, solve_result : clingo.SolveResult):
-            self.exhausted = solve_result.exhausted
-            self.optimal = solve_result.satisfiable and solve_result.exhausted
+    def on_finish(self, solve_result : clingo.SolveResult):
+        self.exhausted = solve_result.exhausted
+        self.optimal = solve_result.satisfiable and solve_result.exhausted
