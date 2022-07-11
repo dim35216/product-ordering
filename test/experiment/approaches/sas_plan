@@ -1,6 +1,6 @@
-(initialize p20001)
-(switch p20001 p10014)
-(switch p10014 p10012)
-(switch p10012 p50013)
-(finalize p50013)
-; cost = 17 (general cost)
+initialize p20001
+campaign-switch p20001 p10014
+product-switch p10014 p10012
+campaign-switch p10012 p50013
+finalize p50013
+Plan cost: 17
