@@ -2,77 +2,103 @@
 ; Author: Michael Dinzinger
 
 (define (domain ProductOrdering) 
-(:requirements :typing :adl :preferences :numeric-fluents)
+(:requirements :strips :typing :action-costs)
 
-(:types product - object)
+(:types product campaign - object)
 
 (:functions
     (changeover-time ?x ?y - product)
-    (overall-changeover-time)
+    (total-cost)
 )
 
 (:predicates
-  (available ?x)
-  (processing ?x - product)
-  (worked-off ?x - product)
+  (changeover ?x ?y - product)
+  (product-campaign ?p - product ?c - campaign)
   (initialized)
-  (complete)
+  (not-initialized)
+  (finalized)
+  (product-processed ?x - product)
+  (product-queued ?x - product)
+  (campaign-processed ?x - product)
+  (campaign-queued ?c - campaign)
+  (campaign-switch-possible ?c ?d - campaign)
 )
 
 (:action initialize
-  :parameters (?x - product)
+  :parameters (?x - product ?c - campaign)
   :precondition (and
-                  (available ?x)
-                  (not (worked-off ?x))
-                  (not (processing ?x))
-                  (not (initialized))
-                  (not (complete))
+                  (not-initialized)
+                  (product-campaign ?x ?c)
                 )
   :effect (and
-            (processing ?x)
+            (product-queued ?x)
+            (campaign-queued ?c)
             (initialized)
-            (assign (overall-changeover-time) 0)
+            (not (not-initialized))
           )
 )
 
-(:action switch
-  :parameters (?x ?y - product)
+(:action product-switch
+  :parameters (?x ?y - product ?c - campaign)
   :precondition (and
-                  (available ?x)
-                  (available ?y)
-                  (not (worked-off ?x))
-                  (processing ?x)
-                  (not (worked-off ?y))
-                  (not (processing ?y))
+                  (changeover ?x ?y)
+                  (product-queued ?x)
+                  (product-campaign ?x ?c)
+                  (product-campaign ?y ?c)
+                  (campaign-queued ?c)
                   (initialized)
-                  (not (complete))
                 )
   :effect (and
-            (worked-off ?x)
-            (not (processing ?x))
-            (processing ?y)
-            (+ (overall-changeover-time) (changeover-time ?x ?y))
+            (product-processed ?x)
+            (not (product-queued ?x))
+            (product-queued ?y)
+            (increase (total-cost) (changeover-time ?x ?y))
+          )
+)
+
+(:action campaign-switch
+  :parameters (?x ?y - product ?c ?d - campaign)
+  :precondition (and
+                  (initialized)
+                  (changeover ?x ?y)
+                  (product-campaign ?x ?c)
+                  (product-campaign ?y ?d)
+                  (campaign-switch-possible ?c ?d)
+                  (product-queued ?x)
+                  (campaign-queued ?c)
+                )
+  :effect (and
+            (product-processed ?x)
+            (not (product-queued ?x))
+            (product-queued ?y)
+            (campaign-processed ?c)
+            (not (campaign-queued ?c))
+            (campaign-queued ?d)
+            (increase (total-cost) (changeover-time ?x ?y))
           )
 )
 
 (:action finalize
-  :parameters (?x - product)
+  :parameters (?x - product ?c - campaign)
   :precondition (and
-                  (available ?x)
-                  (not (worked-off ?x))
-                  (processing ?x)
                   (initialized)
-                  (not (complete))
+                  (product-campaign ?x ?c)
+                  (product-queued ?x)
+                  (campaign-queued ?c)
                 )
   :effect (and
-            (worked-off ?x)
-            (not (processing ?x))
-            (complete)
+            (not (initialized))
+            (finalized)
+            (product-processed ?x)
+            (not (product-queued ?x))
+            (campaign-processed ?c)
+            (not (campaign-queued ?c))
           )
 )
 
 (:action dummy
-  :precondition (and (complete))
+  :precondition (and (finalized))
+  :effect (and (finalized))
 )
 
 )

@@ -1,16 +1,15 @@
 import unittest
-import sys
 import os
-sys.path.append('.')
-
-from src.pddl.utils import scan_tokens
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')))
+from src.pddl.parser.utils import scan_tokens
 
 class TestUtils(unittest.TestCase):
 
     def test_scan_tokens_tc1(self):
         """ TestCase 1
         """
-        filename = os.path.join('test', 'pddl', 'domain.pddl')
+        filename = os.path.join('test', 'pddl', 'parser', 'domain.pddl')
 
         tokens = scan_tokens(filename)
 

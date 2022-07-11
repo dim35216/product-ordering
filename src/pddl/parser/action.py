@@ -34,7 +34,7 @@ class Action:
         '\n  preconditions: ' + str(self.preconditions) + \
         '\n  effects: ' + str(self.effects) + '\n'
 
-    def repr_ASP_term(self):
+    def repr_asp_term(self):
         """Get representation of action as ASP term
 
         Returns:

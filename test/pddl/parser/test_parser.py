@@ -1,11 +1,10 @@
 import unittest
-import sys
 import os
-sys.path.append('.')
-
-from src.pddl.parser import Parser
-from src.pddl.action import Action
-from src.pddl.utils import parse_hierarchy, parse_fluents
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')))
+from src.pddl.parser.parser import Parser
+from src.pddl.parser.action import Action
+from src.pddl.parser.utils import parse_hierarchy, parse_fluents
 
 class TestPDDLParser(unittest.TestCase):
 

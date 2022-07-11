@@ -1,20 +1,21 @@
-from typing import Set, Dict, Any
+from typing import Set, Dict, Any, List
+import logging
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import *
-from action import Action
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from constants.constants import PROJECT_FOLDER
+sys.path.append(PROJECT_FOLDER)
+from src.pddl.parser.action import Action
+from src.pddl.parser.utils import scan_tokens, parse_hierarchy, parse_fluents, \
+    frozenset_of_tuples, split_predicates, parse_goal
 
 class Parser:
     """PDDL parser, which parses PDDL planning problems divided
     into a domain file and a problem file
     """
 
-    SUPPORTED_REQUIREMENTS = [':strips', ':negative-preconditions', ':typing', ':adl',
-                              ':preferences', ':disjunctive-preconditions', ':equality',
-                              ':numeric-fluents']
-    SUPPORTED_SUPER_REQUIREMENTS = {':adl': [':strips', ':typing' , ':disjunctive-preconditions',
-                                    ':equality', ':quantified-preconditions', ':condition-effects']}
+    SUPPORTED_REQUIREMENTS = [':strips', ':typing', ':action-costs', ':preferences',
+        ':numeric-fluents', ':negative-preconditions']
 
     def __init__(self, domain : str, problem : str) -> None:
         """Constructor of PDDL parser
@@ -65,30 +66,27 @@ class Parser:
             elif token == ':requirements':
                 group = set(group)
                 for req in group:
-                    if req in self.SUPPORTED_SUPER_REQUIREMENTS:
-                        self.requirements.update(self.SUPPORTED_SUPER_REQUIREMENTS[req])
                     if not req in self.SUPPORTED_REQUIREMENTS:
                         raise Exception('Requirement ' + req + ' not supported')
-                group.difference_update(self.SUPPORTED_SUPER_REQUIREMENTS)
                 self.requirements.update(group)
-            
+
             elif token == ':constants':
                 parse_hierarchy(group, self.constants, 'constants', False)
-            
+
             elif token == ':functions':
                 parse_fluents(group, self.functions, 'functions')
-            
+
             elif token == ':predicates':
                 parse_fluents(group, self.predicates, 'predicates')
-            
+
             elif token == ':types':
                 parse_hierarchy(group, self.types, 'types', True)
-            
+
             elif token == ':action':
                 self.parse_action(group)
-            
+
             else:
-                print(str(token) + ' is not recognized in domain')
+                logging.error(str(token) + ' is not recognized in domain')
 
 
     def parse_problem(self, problem_filename : str):
@@ -104,22 +102,22 @@ class Parser:
 
         while tokens:
             group = tokens.pop(0)
-            t = group.pop(0)
+            token = group.pop(0)
 
-            if t == 'problem':
+            if token == 'problem':
                 self.problem_name = group[0]
 
-            elif t == ':domain':
+            elif token == ':domain':
                 if self.domain_name != group[0]:
                     raise Exception('Different domain specified in problem file')
 
-            elif t == ':requirements':
+            elif token == ':requirements':
                 pass # Ignore requirements in problem, parse them in the domain
 
-            elif t == ':objects':
+            elif token == ':objects':
                 parse_hierarchy(group, self.objects, 'objects', False)
 
-            elif t == ':init':
+            elif token == ':init':
                 state = set()
                 for predicate in group:
                     assert isinstance(predicate, list)
@@ -130,21 +128,21 @@ class Parser:
                         target = predicate[1]
                         source = predicate[2]
                         if isinstance(target, list) and len(target) != 0:
-                            if target[0] in list(self.numeric_fluents.keys()):
+                            if target[0] in self.numeric_fluents:
                                 if isinstance(source, str):
                                     self.numeric_fluents[target[0]][tuple(target[1:])] = int(source)
                 self.state = frozenset_of_tuples(state)
 
-            elif t == ':goal':
+            elif token == ':goal':
                 assert len(group) == 1
                 self.goal, self.preferences = parse_goal(group[0])
 
-            elif t == ':metric':
+            elif token == ':metric':
                 assert len(group) == 2
                 self.metric = tuple([group[0], self.parse_numeric_operation(group[1])])
 
             else:
-                print(str(t) + ' is not recognized in problem')
+                logging.error(str(token) + ' is not recognized in problem')
 
     def parse_action(self, group : list):
         """Parse PDDL action
@@ -162,36 +160,36 @@ class Parser:
         parameters = []
         preconditions : tuple = ()
         effects : tuple = ('and', [])
-        
-        while group:
-            t = group.pop(0)
 
-            if t == ':parameters':
+        while group:
+            token = group.pop(0)
+
+            if token == ':parameters':
                 if not isinstance(group, list):
                     raise Exception('Error with ' + name + ' parameters')
                 untyped_parameters : List[List[str]] = []
-                p = group.pop(0)
-                while p:
-                    t = p.pop(0)
-                    if t == '-':
+                param = group.pop(0)
+                while param:
+                    token = param.pop(0)
+                    if token == '-':
                         if not untyped_parameters:
                             raise Exception('Unexpected hyphen in ' + name + ' parameters')
-                        ptype = p.pop(0)
+                        ptype = param.pop(0)
                         while untyped_parameters:
                             parameters.append([untyped_parameters.pop(0), ptype])
                     else:
-                        untyped_parameters.append(t)
+                        untyped_parameters.append(token)
                 while untyped_parameters:
                     parameters.append([untyped_parameters.pop(0), 'object'])
 
-            elif t == ':precondition':
+            elif token == ':precondition':
                 preconditions = split_predicates(group.pop(0), name, ' preconditions')
 
-            elif t == ':effect':
+            elif token == ':effect':
                 effects = split_predicates(group.pop(0), name, ' effects')
 
             else:
-                print(str(t) + ' is not recognized in action')
+                logging.error(str(token) + ' is not recognized in action')
 
         self.actions.append(Action(name, parameters, preconditions, effects))
 
