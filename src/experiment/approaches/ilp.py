@@ -48,18 +48,21 @@ def create_model(products : Set[str], consider_constraints : Union[None, int] = 
         delta_minus[product] = []
 
     variables : Dict[str, Dict[str, Var]] = {'v': {}}
-    campaigns_switch : Dict[str, Dict[str, int]] = {'v': {}}
+    campaign_switch : Dict[str, List[str]] = {'v': []}
+    campaign_switch.update([(product, []) for product in products])
     for product1 in products:
         var_v_product1 = model.binary_var(f'x_v_{product1}')
         variables['v'][product1] = var_v_product1
         delta_plus['v'].append(var_v_product1)
         delta_minus[product1].append(var_v_product1)
-        campaigns_switch['v'] = {product1: 1}
+        campaign_switch['v'].append(product1)
+        
         var_product1_v = model.binary_var(f'x_{product1}_v')
         variables[product1] = {'v': var_product1_v}
         delta_minus['v'].append(var_product1_v)
         delta_plus[product1].append(var_product1_v)
-        campaigns_switch[product1] = {'v': 1}
+        campaign_switch[product1].append('v')
+        
         campaign1 = df_properties.at[product1, 'Campaign']
         for product2 in products:
             distance = df_matrix.at[product1, product2]
@@ -69,10 +72,8 @@ def create_model(products : Set[str], consider_constraints : Union[None, int] = 
                 delta_plus[product1].append(var)
                 delta_minus[product2].append(var)
                 campaign2 = df_properties.at[product2, 'Campaign']
-                if campaign1 == campaign2:
-                    campaigns_switch[product1][product2] = 0
-                else:
-                    campaigns_switch[product1][product2] = 1
+                if campaign1 != campaign2:
+                    campaign_switch[product1].append(product2)
 
     for product in list(products) + ['v']:
         linear_expr = model.linear_expr()
@@ -112,24 +113,25 @@ def create_model(products : Set[str], consider_constraints : Union[None, int] = 
         linear_expr = model.linear_expr()
         for product1 in variables:
             for product2 in variables[product1]:
-                coeff = campaigns_switch[product1][product2]
-                linear_expr.add_term(variables[product1][product2], coeff)
-        model.add_constraint(linear_expr == numCampaigns, f'campaigns_switch')
+                if product2 in campaign_switch[product1]:
+                    linear_expr.add_term(variables[product1][product2], 1)
+        model.add_constraint(linear_expr == numCampaigns, f'campaign_switch')
 
     if consider_constraints is None or consider_constraints >= 2:
         for campaign in campaigns:
-            max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
-                if campaign == df_properties.at[product, 'Campaign']])
             temp_products = [product for product in products
                 if campaign == df_properties.at[product, 'Campaign']
                     and df_properties.at[product1, 'Packaging'] == 'Normal']
             if len(temp_products) > 0:
+                max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
+                    if campaign == df_properties.at[product, 'Campaign']])
                 linear_expr = model.linear_expr()
                 for product1 in temp_products:
                     if df_quantity.at[product1, 'Quantity'] == max_quantity:
                         for product2 in variables[product1]:
-                            if df_properties.at[product2, 'Campaign'] != campaign:
-                                linear_expr.add_term(variables[product1][product2], 1)
+                            if product2 != 'v':
+                                if df_properties.at[product2, 'Campaign'] != campaign:
+                                    linear_expr.add_term(variables[product1][product2], 1)
                 model.add_constraint(linear_expr == 1, 'max_quantity')
 
     if consider_constraints is None or consider_constraints >= 3:

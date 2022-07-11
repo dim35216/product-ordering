@@ -111,8 +111,7 @@ def build_graph(products : Set[str], start : Union[str, None] = None, \
     
     return edge_weights
 
-def run_concorde(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None, consider_constraints : Union[None, int] = None) \
+def run_concorde(products : Set[str], run : int, consider_constraints : Union[None, int] = None) \
     -> Tuple[List[str], bool]:
     """Computing the Product Ordering problem using the concorde tsp solver. Therefore it's
     necessary to transform the asymmetric problem instance to a symmetric one, and save the
@@ -127,7 +126,7 @@ def run_concorde(products : Set[str], run : int, start : Union[str, None] = None
     Returns:
         Tuple[List[str], bool]: optimal product order, flag for timeout occurred
     """
-    edge_weights = build_graph(products, start, end, cyclic=True, consider_constraints=consider_constraints)
+    edge_weights = build_graph(products, cyclic=True, consider_constraints=consider_constraints)
 
     start_time = time.time()
     sym_edge_weights = transform_symmetric(edge_weights)

@@ -163,8 +163,8 @@ def run_experiment(sample_size : int, run : int, approach : str, \
     else:
         LOGGER.info('Approach %s is unknown', approach)
 
-    timeouts[approach][sample_size][consider_constraints] = \
-        timeouts[approach][sample_size][consider_constraints] and result['Timeout']
+    timeouts[consider_constraints][approach][sample_size] = \
+        timeouts[consider_constraints][approach][sample_size] and result['Timeout']
 
     with open(RESULTS_FILE, 'a', encoding='utf-8') as filehandle:
         filehandle.write('{}\n'.format(
@@ -188,7 +188,7 @@ def run_experiment(sample_size : int, run : int, approach : str, \
                 str(result['ClingoStats']['Models']),
                 str(result['Variables']),
                 str(result['Constraints']),
-                str(result['Order']),
+                str(' '.join(result['Order'])),
                 str(result['Timeout'])
             ])
         ))
@@ -201,12 +201,12 @@ if __name__ == '__main__':
 
     # List of approaches
     approaches = [
-        # 'lp_normal',
+        'lp_normal',
         'lp_advanced',
-        # 'tsp',
-        # 'pddl',
-        # 'ilp',
-        # 'asp',
+        'tsp',
+        'pddl',
+        'ilp',
+        'asp',
     ]
 
     # Make and clean instances folders
@@ -226,21 +226,21 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = [6] # list(range(6, 72, 1))
+    numProducts = list(range(6, 72, 1))
     runs = list(range(4))
     consider_constraints_options = [0, 1, 2, 3, 4]
 
-    for approach in approaches:
-        timeouts[approach] = {}
-        for n in numProducts:
-            timeouts[approach][n] = {}
-            for consider_constraints in consider_constraints_options:
-                timeouts[approach][n][consider_constraints] = True
+    for consider_constraints in consider_constraints_options:
+        timeouts[consider_constraints] = {}
+        for approach in approaches:
+            timeouts[consider_constraints][approach] = {}
+            for n in numProducts:
+                timeouts[consider_constraints][approach][n] = True
                 Parallel(n_jobs=-1, require='sharedmem') \
                     (delayed(run_experiment)(n, run, approach, consider_constraints) \
                     for run in runs)
-                if timeouts[approach][n][consider_constraints]:
-                    LOGGER.info('All %d runs for approach %s and the considered constraints' + \
+                if timeouts[consider_constraints][approach][n]:
+                    LOGGER.info('All %d runs for approach %s and the considered constraints ' + \
                         'option %s exceeded the time limit; the sample size %d won\'t be ' + \
-                        'increased anymore', len(runs), approach, n)
+                        'increased anymore', len(runs), approach, consider_constraints, n)
                     break
