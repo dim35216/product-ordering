@@ -27,7 +27,7 @@ def scan_tokens(filename : str) -> Union[str, list]:
     # Tokenize
     stack = []
     tokens : List[Union[str, list]] = []
-    for token in re.findall(r'[()]|[^\s()]+', content):
+    for token in re.findall(r'[()]|\"[^()"]+\"|[^\s()]+', content):
         if token == '(':
             stack.append(tokens)
             tokens = []
@@ -47,8 +47,7 @@ def scan_tokens(filename : str) -> Union[str, list]:
     return tokens[0]
 
 def parse_hierarchy(group : list, structure : Dict[str, List], name : str, redefine : bool) -> None:
-    """Parse object hierarchy of PDDL tokens and write back
-    into the given structure file
+    """Parse object hierarchy of PDDL tokens and write back into the given structure file
 
     Args:
         group (list): hierarchied list of PDDL tokens

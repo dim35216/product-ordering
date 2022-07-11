@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Set
 import time
 import logging
 import argparse
@@ -6,14 +6,14 @@ import os
 import sys
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER
+from constants.constants import CHANGEOVER_MATRIX, CAMPAIGNS_ORDER, PRODUCT_PROPERTIES, INF
 
 class Modeler:
     """This class implements a modeler, which takes an instance of the Product Ordering problem
        and describes it in PDDL (Planning Domain Definition Language)
     """
 
-    def create_instance(self, edge_weights : Dict[str, Dict[str, int]], filename : str) -> None:
+    def create_instance(self, products : Set[str], filename : str) -> None:
         """Modelling an Product Ordering problem instance as a classical planning problem with
         preferences with the help of PDDL
 
@@ -21,9 +21,9 @@ class Modeler:
             products (Set[str]): set of products
             filename (str): name of resulting PDDL instance file
         """
-        df_matrix = pd.read_csv(CHANGEOVER_MATRIX, index_col=0)
-        campaigns = set([df_matrix.at[int(product), 'Campaign']
-            for product in edge_weights.keys() - ['start', 'end']])
+        df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
+        df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
+        campaigns = set([df_properties.at[product, 'Campaign'] for product in products])
         df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
 
         problemname = os.path.split(filename)[-1].split('.')[0]
@@ -33,12 +33,14 @@ f'''(define (problem ProductOrdering-{problemname})
     (:domain ProductOrdering)
 
 (:objects'''
-        for product in edge_weights:
+        for product in products:
             result += f'\n    p{product}'
         result += \
-''' - product'''
+'''
+    pstart
+    pend - product'''
         for campaign in campaigns:
-            result += f'\n    {campaign.replace(" ", "_").replace("ü", "ue")}'
+            result += f'\n    "{campaign}"'
         result += \
 '''
     Start
@@ -48,29 +50,30 @@ f'''(define (problem ProductOrdering-{problemname})
 (:init
     (not-initialized)
 '''
-        for product1 in edge_weights:
-            for product2 in edge_weights[product1]:
-                result += f'    (changeover p{product1} p{product2})\n'
-        for product1 in edge_weights:
-            for product2 in edge_weights[product1]:
-                distance = edge_weights[product1][product2]
-                result += f'    (= (changeover-time p{product1} p{product2}) {distance})\n'
-        for product in edge_weights:
-            if product not in ['start', 'end']:
-                campaign = df_matrix.at[int(product), 'Campaign']
-                result += f'    (product-campaign p{product} {campaign.replace(" ", "_").replace("ü", "ue")})\n'
-            else:
-                result += f'    (product-campaign p{product} {product.capitalize()})\n'
+        for product1 in products:
+            result += f'    (changeover pstart p{product1})\n'
+            result += f'    (= (changeover-time pstart p{product1}) 0)\n'
+            result += f'    (changeover p{product1} pend)\n'
+            result += f'    (= (changeover-time p{product1} pend) 0)\n'
+            for product2 in products:
+                distance = df_matrix.at[product1, product2]
+                if distance < INF:
+                    result += f'    (changeover p{product1} p{product2})\n'
+                    result += f'    (= (changeover-time p{product1} p{product2}) {distance})\n'
+        for product in products:
+            result += f'    (product-campaign p{product} "{df_properties.at[product, "Campaign"]}")\n'
+        result += f'    (product-campaign pstart Start)\n'
+        result += f'    (product-campaign pend End)\n'
         for campaign in campaigns:
-            result += f'    (campaign-switch-possible Start {campaign.replace(" ", "_").replace("ü", "ue")})\n'
+            result += f'    (campaign-switch-possible Start "{campaign}")\n'
         for campaign in campaigns:
-            result += f'    (campaign-switch-possible {campaign.replace(" ", "_").replace("ü", "ue")} End)\n'
+            result += f'    (campaign-switch-possible "{campaign}" End)\n'
         for campaign1 in campaigns:
             for campaign2 in campaigns:
                 order1 = df_order.at[campaign1, 'Order']
                 order2 = df_order.at[campaign2, 'Order']
                 if 0 <= order2 - order1 and campaign1 != campaign2:
-                    result += f'    (campaign-switch-possible {campaign1.replace(" ", "_").replace("ü", "ue")} {campaign2.replace(" ", "_").replace("ü", "ue")})\n'
+                    result += f'    (campaign-switch-possible "{campaign1}" "{campaign2}")\n'
         result += \
 ''')
 
@@ -78,10 +81,12 @@ f'''(define (problem ProductOrdering-{problemname})
     (and
         (finalized)
 '''
-        for product in edge_weights:
+        result += f'        (product-processed pstart)\n'
+        result += f'        (product-processed pend)\n'
+        for product in products:
             result += f'        (product-processed p{product})\n'
         for campaign in campaigns:
-            result += f'        (campaign-processed {campaign.replace(" ", "_").replace("ü", "ue")})\n'
+            result += f'        (campaign-processed "{campaign}")\n'
         result += \
 '''    )
 )

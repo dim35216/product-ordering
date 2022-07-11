@@ -194,8 +194,8 @@ class Parser:
         self.actions.append(Action(name, parameters, preconditions, effects))
 
     def parse_numeric_operation(self, group : list) -> tuple:
-        """Parse numeric operation occuring in the goal
-        representations in PDDL problem instance files
+        """Parse numeric operation occuring in the goal representations in PDDL problem instance
+        files
 
         Args:
             group (list): hierarchied list of tokens from goal representation

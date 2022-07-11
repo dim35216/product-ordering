@@ -1,0 +1,72 @@
+Product,Name,Campaign,Volume,BottleCrate,NumShrink,NumTray,Packaging,PlannedPerformance
+12020,Rivella Rot Tr 24x50 PE,Rot,50,False,1,24,Normal,19500
+12021,Rivella Blau Tr 24x50 PE,Blau,50,False,1,24,Normal,19500
+13327,Rivella Grüntee Tr 24x50 PE,Gruentee,50,False,1,24,Normal,19500
+15097,Rivella Blau Sc 6x150 PE,Blau,150,False,1,6,Normal,13500
+15099,Rivella Grüntee Sc 6x150 PE,Gruentee,150,False,1,6,Normal,13500
+15101,Rivella Rot Sc 6x150 PE,Rot,150,False,1,6,Normal,13500
+15227,Rivella Rot Sc 6x100 PE,Rot,100,False,1,6,Normal,13000
+15228,Rivella Blau 6x100cl PET Schrumpf,Blau,100,False,1,6,Normal,13000
+15229,Rivella Grüntee Sc 6x100 PE,Gruentee,100,False,1,6,Normal,13000
+15230,Rivella Rot Ha 6x150 PE,Rot,150,True,1,6,Normal,11000
+15231,Rivella Blau Ha 6x150 PE,Blau,150,True,1,6,Normal,11000
+15950,Rivella Rot Tr 4x6x50 PE,Rot,50,False,4,6,Normal,18000
+15951,Rivella Blau Tr 4x6x50 PE,Blau,50,False,4,6,Normal,18000
+15952,Rivella Grüntee Tr 4x6x50 PE,Gruentee,50,False,4,6,Normal,18000
+16214,Rivella Rot Tr 4x6x50 PE HPB,Rot,50,False,4,6,HPB,18000
+16215,Rivella Blau Tr 4x6x50 PE HPB,Blau,50,False,4,6,HPB,18000
+17151,Rivella Rot Ha 12x100 PE,Rot,100,True,1,12,Normal,13000
+17152,Rivella Blau Ha 12x100 PE,Blau,100,True,1,12,Normal,13000
+18333,Passaia Light Sc 6x150 PE,Passaia_Light,150,False,1,6,Normal,9000
+18334,Passaia Light Tr 4x6x50 PE,Passaia_Light,50,False,4,6,Normal,15000
+18919,Rivella Rot Sc 6x150 PE Halbpaletten,Rot,150,False,1,6,Halbpaletten,13500
+18920,Riv. Blau Sc 6x150 PE Halbpalett,Blau,150,False,1,6,Halbpaletten,13500
+19046,Rivella Rot Tr 3x8x50 PE,Rot,50,False,3,8,Normal,18000
+19047,Rivella Blau Tr 3x8x50 PE,Blau,50,False,3,8,Normal,18000
+19374,Rivella Rot Sc 6x125 PE HPB,Rot,125,False,1,6,HPB,13500
+19375,Rivella Blau Sc 6x125 PE HPB,Blau,125,False,1,6,HPB,13500
+20745,Rivella Rot engl. Etikette Tr 24x50 PE,Rot,50,False,1,24,Engl,19500
+20949,Rivella Rot Sc 24x20 PE SA,Rot,20,False,1,24,Normal,14000
+20951,Rivella Grüntee Sc 24x20 PE SA,Gruentee,20,False,1,24,Normal,12000
+21845,Rivella Refresh Sc 24x20 PE SA,Refresh,20,False,1,24,Normal,14000
+21846,Rivella Refresh Tr 4x6x50 PE,Refresh,50,False,4,6,Normal,18000
+21847,Rivella Refresh Tr 4x6x50 PE HPB,Refresh,50,False,4,6,HPB,18000
+21848,Rivella Refresh Tr 3x8x50 PE,Refresh,50,False,3,8,Normal,18000
+21849,Rivella Refresh Sc 6x125 PE HPB,Refresh,125,False,1,6,HPB,13500
+21850,Rivella Refresh Sc 6x150 PE,Refresh,150,False,1,6,Normal,13500
+21851,Rivella Refresh Ha 6x150 PE,Refresh,150,True,1,6,Normal,11000
+21865,Rivella Refresh Tr 24x50 PE,Refresh,50,False,1,24,Normal,19500
+21968,Rivella Refresh Sc 6x100 PE,Refresh,100,False,1,6,Normal,13000
+22178,1/1 Pal. Rivella Rot 84x6x150cl,Rot,150,False,1,6,84er,13500
+22179,1/1 Pal. Rivella Blau 84x6x150cl,Blau,150,False,1,6,84er,13500
+22180,1/1 Pal. Rivella Refresh 84x6x150cl,Refresh,150,False,1,6,84er,13500
+22199,Rivella Rot Tr 3x8x50 PE Migros,Rot,50,False,3,8,Migros,18000
+22200,Rivella Blau Tr 3x8x50 PE Migros,Blau,50,False,3,8,Migros,18000
+22202,Rivella Refresh Tr 3x8x50 PE Migros,Refresh,50,False,3,8,Migros,18000
+22249,Rivella Rot TR 3x8x20 PE,Rot,20,False,3,8,Normal,7000
+22250,Rivella Holunderblüte Tr 4x6x50 PE,Holunder,50,False,4,6,Normal,17500
+22251,Rivella Holunderblüte Tr 24x50 PE,Holunder,50,False,1,24,Normal,19500
+22275,Rivella Blau Sc 8x150 PE,Blau,150,False,1,8,8er Pack,12500
+22276,Rivella Rot Sc 8x150 PE,Rot,150,False,1,8,8er Pack,12500
+22361,Rivella Rot Sc 6x125 PE Halbpalett,Rot,125,False,1,6,Halbpaletten,13500
+22362,Rivella Blau Sc 6x125 PE Halbpalett,Blau,125,False,1,6,Halbpaletten,13500
+22363,Rivella Rot Tr 4x6x50 PE Halbpalett,Rot,50,False,4,6,Halbpaletten,17000
+22364,Rivella Blau Tr 4x6x50 PE Halbpalett,Blau,50,False,4,6,Halbpaletten,17000
+22720,Rivella Rot Sc 6x150 PE HPB,Rot,150,False,1,6,HPB,13500
+22721,Rivella Blau Sc 6x150 PE HPB,Blau,150,False,1,6,HPB,13500
+22868,Passaia Sc 6x150 PE,Passaia,150,False,1,6,Normal,9000
+22869,Passaia Tr 4x6x50 PE,Passaia,50,False,4,6,Normal,13400
+23071,Rivella Refresh Sc 12x75cl PE,Refresh,75,False,1,12,Normal,11500
+23149,Rivella Grapefruit Tr 24x50 PE,Grapefruit,50,False,1,24,Normal,19000
+23151,Rivella Grapefruit Tr 4x6x50 PE,Grapefruit,50,False,4,6,Normal,17500
+23152,Rivella Naturaplan Tr 4x6x50 PE,Naturaplan,50,False,4,6,Normal,18000
+23154,Passaia Zero Sc 6x150 PE,Passaia_Zero,150,False,1,6,Normal,9000
+23155,Passaia Zero Tr 4x6x50 PE,Passaia_Zero,50,False,4,6,Normal,15000
+23357,Passaia Sc 6x150 PE,Passaia,150,False,1,6,Normal,9000
+23358,Passaia Tr 4x6x50 PE,Passaia,50,False,4,6,Normal,15000
+23444,Rivella Rot Tr 3x8x50 PET Landi,Rot,50,False,3,8,Landi,18000
+23446,Rivella Blau Tr 3x8x50 PET Landi,Blau,50,False,3,8,Landi,18000
+23545,Sterilisation zu Wochenbeginn,Sterilisation_zu_Wochenbeginn,0,-,0,0,-,1
+23546,Zwischensterilisation,Zwischensterilisation,0,-,0,0,-,1
+23547,Wochenendreinigung,Wochenendreinigung,0,-,0,0,-,1
+23614,Rivella Refresh Sc 6x150 PE HPB,Refresh,150,False,1,6,HPB,13500

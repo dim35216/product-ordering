@@ -1,7 +1,7 @@
 """Approach for solving the Product Ordering approach:
 Modelling as PDDL instance and solving it with an optimizing PDDL solver
 """
-from typing import Set, List, Union, Tuple
+from typing import *
 import logging
 import subprocess
 import re
@@ -10,7 +10,6 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from constants.constants import DOMAIN_PDDL, FAST_DOWNWARD_EXE, PROJECT_FOLDER, INSTANCES_FOLDER, TIMEOUT
 sys.path.append(PROJECT_FOLDER)
-from src.experiment.utils import build_graph
 from src.pddl.modeler.modeler import Modeler
 
 LOGGER = logging.getLogger('experiment')
@@ -57,8 +56,7 @@ def interpret_sas_plan(cmd_output : str) -> Tuple[int, List[str]]:
 
     return opt_value, order
 
-def run_fast_downward(products : Set[str], run : int, start : Union[str, None] = None, \
-    end : Union[str, None] = None) -> Tuple[int, List[str], bool]:
+def run_fast_downward(products : Set[str], run : int) -> Tuple[int, List[str], bool]:
     """Computing the Product Ordering problem with the help of an optimizing PDDL solver. This
     solver is named Delphi1 and is taken from the website of IPC2018. It extends the common Fast
     Downward planner such that it can handle action costs and is thus optimizing.
@@ -66,8 +64,6 @@ def run_fast_downward(products : Set[str], run : int, start : Union[str, None] =
     Args:
         products (Set[str]): set of products
         run (int): id of run
-        start (Union[str, None], optional): start product. Defaults to None.
-        end (Union[str, None], optional): end product. Defaults to None.
 
     Returns:
         Tuple[int, List[str], bool]: objective value, optimal product order, flag for timeout \
@@ -75,11 +71,9 @@ def run_fast_downward(products : Set[str], run : int, start : Union[str, None] =
     """
     pddl_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.pddl')
     plan_filename = os.path.join(INSTANCES_FOLDER, 'pddl', f'instance_{len(products)}_{run}.plan')
-    
-    edge_weights = build_graph(products, start, end, consider_campaigns=False)
 
     modeler = Modeler()
-    modeler.create_instance(edge_weights, pddl_filename)
+    modeler.create_instance(products, pddl_filename)
     assert os.path.exists(pddl_filename)
     assert os.path.exists(DOMAIN_PDDL)
 
