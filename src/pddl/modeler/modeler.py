@@ -23,7 +23,7 @@ class Modeler:
         """
         df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
         df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
-        campaigns = set([df_properties.at[product, 'Campaign'] for product in products])
+        campaigns = sorted([df_properties.at[product, 'Campaign'] for product in products])
         df_order = pd.read_csv(CAMPAIGNS_ORDER, index_col='Campaign')
 
         problemname = os.path.split(filename)[-1].split('.')[0]
