@@ -127,16 +127,16 @@ def create_model(products : Set[str], consider_constraints : Union[None, int] = 
                 if campaign == df_properties.at[product, 'Campaign']
                     and df_properties.at[product, 'Packaging'] == 'Normal']
             if len(temp_products) > 0:
-                max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
-                    if campaign == df_properties.at[product, 'Campaign']])
+                max_quantity = max([df_quantity.at[product, 'Quantity'] \
+                    for product in temp_products])
                 linear_expr = model.linear_expr()
-                for product1 in temp_products:
-                    if df_quantity.at[product1, 'Quantity'] == max_quantity:
-                        for product2 in variables[product1]:
-                            if product2 != 'v':
-                                if df_properties.at[product2, 'Campaign'] != campaign:
+                for product2 in temp_products:
+                    if df_quantity.at[product2, 'Quantity'] == max_quantity:
+                        for product1 in products:
+                            if product2 in variables[product1]:
+                                if df_properties.at[product2, 'Campaign'] == campaign:
                                     linear_expr.add_term(variables[product1][product2], 1)
-                model.add_constraint(linear_expr == 1, 'max_quantity')
+                model.add_constraint(linear_expr == 0, 'max_quantity')
 
     if consider_constraints is None or consider_constraints >= 3:
         for campaign in campaigns:
