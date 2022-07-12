@@ -125,7 +125,7 @@ def create_model(products : Set[str], consider_constraints : Union[None, int] = 
         for campaign in campaigns:
             temp_products = [product for product in products
                 if campaign == df_properties.at[product, 'Campaign']
-                    and df_properties.at[product1, 'Packaging'] == 'Normal']
+                    and df_properties.at[product, 'Packaging'] == 'Normal']
             if len(temp_products) > 0:
                 max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
                     if campaign == df_properties.at[product, 'Campaign']])

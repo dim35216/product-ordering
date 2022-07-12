@@ -35,4 +35,4 @@ FAST_DOWNWARD_EXE = os.path.join(PROJECT_FOLDER, 'include', './fast-downward.py'
 TIMEOUT = 600.0
 
 # Arc length infinity
-INF = 10000000
+INF = 100000000
