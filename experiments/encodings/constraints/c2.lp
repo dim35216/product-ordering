@@ -4,7 +4,7 @@
 % Implementation of constraint 2 (max_quantity)
 
 max_quantity_campaign(C, Qmax) :- Qmax = #max{ Q : campaign(X, C), quantity(X, Q), packaging(X, "Normal") }, campaign(_, C).
-penaulty_quantity(X, Y) :- switch(X, Y), campaign(X, C), campaign(Y, C), ackaging(X, "Normal"), quantity(X, Qmax),
+penaulty_quantity(X, Y) :- switch(X, Y), campaign(X, C), campaign(Y, C), packaging(X, "Normal"), quantity(X, Qmax),
                            max_quantity_campaign(C, Qmax).
 
 #show penaulty_quantity/2.

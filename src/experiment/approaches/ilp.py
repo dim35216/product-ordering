@@ -130,10 +130,10 @@ def create_model(products : Set[str], consider_constraints : Union[None, int] = 
                 max_quantity = max([df_quantity.at[product, 'Quantity'] \
                     for product in temp_products])
                 linear_expr = model.linear_expr()
-                for product2 in temp_products:
-                    if df_quantity.at[product2, 'Quantity'] == max_quantity:
-                        for product1 in products:
-                            if product2 in variables[product1]:
+                for product1 in temp_products:
+                    if df_quantity.at[product1, 'Quantity'] == max_quantity:
+                        for product2 in variables[product1]:
+                            if product2 != 'v':
                                 if df_properties.at[product2, 'Campaign'] == campaign:
                                     linear_expr.add_term(variables[product1][product2], 1)
                 model.add_constraint(linear_expr == 0, 'max_quantity')

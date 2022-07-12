@@ -95,9 +95,6 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
         volume1 = df_properties.at[product1, 'Volume']
         packaging1 = df_properties.at[product1, 'Packaging']
         quantity1 = df_quantity.at[product1, 'Quantity']
-        max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
-            if campaign1 == df_properties.at[product, 'Campaign']
-                and df_properties.at[product, 'Packaging'] == 'Normal'])
 
         for product2, distance in row.iteritems():
             campaign2 = df_properties.at[product2, 'Campaign']
@@ -107,12 +104,23 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
             if distance < INF:
                 df_matrix.at[product1, product2] *= 1000
 
+                temp_products = [product for product in products \
+                    if campaign1 == df_properties.at[product, 'Campaign']
+                        and df_properties.at[product, 'Packaging'] == 'Normal']
+
                 if consider_constraints is None or consider_constraints >= 2:
-                    if not (
-                        campaign1 == campaign2 \
-                        and quantity1 == max_quantity \
-                        and packaging1 == 'Normal'
-                    ):
+                    penaulty = False
+                    
+                    if len(temp_products) > 0:
+                        max_quantity = max([df_quantity.at[product, 'Quantity'] \
+                            for product in temp_products])
+
+                        if campaign1 == campaign2 \
+                            and quantity1 == max_quantity \
+                            and packaging1 == 'Normal':
+                            penaulty = True
+                            
+                    if not penaulty:
                         df_matrix.at[product1, product2] /= 1000
 
                 if consider_constraints is None or consider_constraints >= 3:
