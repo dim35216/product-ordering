@@ -65,7 +65,7 @@ def interpret_clingo(symbols : Sequence[clingo.Symbol]) -> List[str]:
 
     return order
 
-def run_clingo(products : Set[str], run : int, encoding : str, \
+def run_clingo(products : Set[str], run : int, encoding : str = 'advanced', \
     consider_constraints : Union[None, int] = None) -> Tuple[int, List[str], Dict[str, Any], bool]:
     """Computing the Product Ordering problem as a logic program using the normal or advanced
     encoding for the optimization directive
@@ -73,7 +73,8 @@ def run_clingo(products : Set[str], run : int, encoding : str, \
     Args:
         products (Set[str]): set of products
         run (int): id of run
-        encoding (str): usage of normal or advanced encoding for optimization directive
+        encoding (str): usage of normal or advanced encoding for optimization directive. Defaults \
+            to 'advanced'.
         consider_constraints (Union[None, int], optional): Indicating which constraints are taken \
             into account. For 0 no additional constraints are considered, for None all are \
             considered. Defaults to None.

@@ -69,6 +69,8 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
     """
     df_matrix = pd.read_csv(CHANGEOVER_MATRIX, dtype={'Product': str}).set_index('Product')
     df_matrix = df_matrix.loc[sorted(list(products)), sorted(list(products))]
+    # gcd = np.gcd.reduce(df_matrix.values.flatten())
+    # df_matrix[df_matrix != INF] = df_matrix[df_matrix != INF] / gcd
     df_properties = pd.read_csv(PRODUCT_PROPERTIES, dtype={'Product': str}).set_index('Product')
     df_quantity = pd.read_csv(PRODUCT_QUANTITY, dtype={'Product': str}).set_index('Product')
     campaigns = set([df_properties.at[product, 'Campaign'] for product in products])
@@ -80,7 +82,7 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
         for step in sorted(df_order['Order'].drop_duplicates().to_list()):
             step_campaigns = campaigns.intersection(df_order[df_order['Order'] == step].index.to_list())
             if len(step_campaigns) != 0:
-                for campaign in campaigns:
+                for campaign in step_campaigns:
                     campaigns_order[campaign] = counter
                 counter += 1
     else:
@@ -93,8 +95,6 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
         volume1 = df_properties.at[product1, 'Volume']
         packaging1 = df_properties.at[product1, 'Packaging']
         quantity1 = df_quantity.at[product1, 'Quantity']
-        max_quantity = max([df_quantity.at[product, 'Quantity'] for product in products \
-            if campaign1 == df_properties.at[product, 'Campaign']])
 
         for product2, distance in row.iteritems():
             campaign2 = df_properties.at[product2, 'Campaign']
@@ -102,30 +102,39 @@ def get_changeover_matrix(products : Set[str], consider_constraints : Union[None
             volume2 = df_properties.at[product2, 'Volume']
 
             if distance < INF:
-                rated = False
+                df_matrix.at[product1, product2] *= 1000
+
+                temp_products = [product for product in products \
+                    if campaign1 == df_properties.at[product, 'Campaign']
+                        and df_properties.at[product, 'Packaging'] == 'Normal']
 
                 if consider_constraints is None or consider_constraints >= 2:
-                    if campaign1 != campaign2 \
-                        and quantity1 == max_quantity \
-                        and packaging1 == 'Normal':
-                        rated = True
+                    if len(temp_products) > 0:
+                        max_quantity = max([df_quantity.at[product, 'Quantity'] \
+                            for product in temp_products])
+
+                        if campaign1 == campaign2 \
+                            and quantity1 == max_quantity \
+                            and packaging1 == 'Normal':
+                            df_matrix.at[product1, product2] = INF
 
                 if consider_constraints is None or consider_constraints >= 3:
                     if campaign1 == campaign2 \
                         and volume1 == volume2 \
                         and packaging1 != 'Normal':
-                        rated = True
-
-                if not rated:
-                    df_matrix.at[product1, product2] *= 1000
+                        df_matrix.at[product1, product2] /= 1000
 
                 if consider_constraints is None or consider_constraints >= 1:
                     if campaign1 != campaign2:
-                        df_matrix.at[product1, product2] += 1000000
+                        df_matrix.at[product1, product2] += 10000000
 
                     if campaign_order2 - campaign_order1 not in [0, 1]:
                         df_matrix.at[product1, product2] = INF
 
+    gcd = np.gcd.reduce(df_matrix.values.flatten())
+    df_matrix[df_matrix != INF] = df_matrix[df_matrix != INF] / gcd
+    minimum = min(df_matrix.values.flatten())
+    df_matrix[df_matrix != INF] = df_matrix[df_matrix != INF] - minimum + 1
     return df_matrix, campaigns_order
 
 def create_lp_instance(products : Set[str]) -> str:

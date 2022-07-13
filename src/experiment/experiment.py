@@ -204,12 +204,12 @@ if __name__ == '__main__':
 
     # List of approaches
     approaches = [
-        'lp_normal',
-        'lp_advanced',
+        # 'lp_normal',
+        # 'lp_advanced',
         'tsp',
-        'pddl',
-        'ilp',
-        'asp',
+        # 'pddl',
+        # 'ilp',
+        # 'asp',
     ]
 
     # Make and clean instances folders
@@ -229,9 +229,9 @@ if __name__ == '__main__':
                 else:
                     os.remove(os.path.join(folder, file))
 
-    numProducts = list(range(6, 72, 1))
-    runs = list(range(4))
-    consider_constraints_options = [0, 1, 2, 3, 4]
+    numProducts = [6] # list(range(6, 72, 1))
+    runs = [0] # list(range(4))
+    consider_constraints_options = [3] # [0, 1, 2, 3, 4]
 
     for consider_constraints in consider_constraints_options:
         timeouts[consider_constraints] = {}

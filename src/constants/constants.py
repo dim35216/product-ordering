@@ -3,6 +3,7 @@ import os
 # Folder constants
 PROJECT_FOLDER = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 EXPERIMENTS_FOLDER = os.path.join(PROJECT_FOLDER, 'experiments')
+EVALUATIONS_FOLDER = os.path.join(PROJECT_FOLDER, 'evaluations')
 INSTANCES_FOLDER = os.path.join(EXPERIMENTS_FOLDER, 'instances')
 
 # Product information
@@ -35,4 +36,4 @@ FAST_DOWNWARD_EXE = os.path.join(PROJECT_FOLDER, 'include', './fast-downward.py'
 TIMEOUT = 600.0
 
 # Arc length infinity
-INF = 10000000
+INF = 100000000
