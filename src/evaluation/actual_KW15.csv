@@ -1,17 +1,17 @@
-,Product,Name,Campaign,Volume,BottleCrate,NumShrink,NumTray,Packaging,PlannedPerformance,Quantity
-0,23545,Sterilisation zu Wochenbeginn,Sterilisation_zu_Wochenbeginn,0,-,0,0,-,1,0
-1,15951,Rivella Blau Tr 4x6x50 PE,Blau,50,False,4,6,Normal,18000,136000
-2,19375,Rivella Blau Sc 6x125 PE HPB,Blau,125,False,1,6,HPB,13500,60000
-3,22275,Rivella Blau Sc 8x150 PE,Blau,150,False,1,8,8er Pack,12500,27000
-4,15231,Rivella Blau Ha 6x150 PE,Blau,150,True,1,6,Normal,11000,15000
-5,18920,Riv. Blau Sc 6x150 PE Halbpalett,Blau,150,False,1,6,Halbpaletten,13500,10000
-6,22721,Rivella Blau Sc 6x150 PE HPB,Blau,150,False,1,6,HPB,13500,80000
-7,15099,Rivella Grüntee Sc 6x150 PE,Gruentee,150,False,1,6,Normal,13500,23000
-8,15229,Rivella Grüntee Sc 6x100 PE,Gruentee,100,False,1,6,Normal,13000,11000
-9,15952,Rivella Grüntee Tr 4x6x50 PE,Gruentee,50,False,4,6,Normal,18000,35000
-10,13327,Rivella Grüntee Tr 24x50 PE,Gruentee,50,False,1,24,Normal,19500,35000
-11,12020,Rivella Rot Tr 24x50 PE,Rot,50,False,1,24,Normal,19500,145000
-12,19374,Rivella Rot Sc 6x125 PE HPB,Rot,125,False,1,6,HPB,13500,70000
-13,15230,Rivella Rot Ha 6x150 PE,Rot,150,True,1,6,Normal,11000,120000
-14,22720,Rivella Rot Sc 6x150 PE HPB,Rot,150,False,1,6,HPB,13500,60000
-15,23547,Wochenendreinigung,Wochenendreinigung,0,-,0,0,-,1,0
+Product,Name,Campaign,Volume,BottleCrate,NumShrink,NumTray,Packaging,PlannedPerformance,Quantity
+23545,Sterilisation zu Wochenbeginn,Sterilisation_zu_Wochenbeginn,0,-,0,0,-,1,0
+15951,Rivella Blau Tr 4x6x50 PE,Blau,50,False,4,6,Normal,18000,136000
+19375,Rivella Blau Sc 6x125 PE HPB,Blau,125,False,1,6,HPB,13500,60000
+22275,Rivella Blau Sc 8x150 PE,Blau,150,False,1,8,8er Pack,12500,27000
+15231,Rivella Blau Ha 6x150 PE,Blau,150,True,1,6,Normal,11000,15000
+18920,Riv. Blau Sc 6x150 PE Halbpalett,Blau,150,False,1,6,Halbpaletten,13500,10000
+22721,Rivella Blau Sc 6x150 PE HPB,Blau,150,False,1,6,HPB,13500,80000
+15099,Rivella Grüntee Sc 6x150 PE,Gruentee,150,False,1,6,Normal,13500,23000
+15229,Rivella Grüntee Sc 6x100 PE,Gruentee,100,False,1,6,Normal,13000,11000
+15952,Rivella Grüntee Tr 4x6x50 PE,Gruentee,50,False,4,6,Normal,18000,35000
+13327,Rivella Grüntee Tr 24x50 PE,Gruentee,50,False,1,24,Normal,19500,35000
+12020,Rivella Rot Tr 24x50 PE,Rot,50,False,1,24,Normal,19500,145000
+19374,Rivella Rot Sc 6x125 PE HPB,Rot,125,False,1,6,HPB,13500,70000
+15230,Rivella Rot Ha 6x150 PE,Rot,150,True,1,6,Normal,11000,120000
+22720,Rivella Rot Sc 6x150 PE HPB,Rot,150,False,1,6,HPB,13500,60000
+23547,Wochenendreinigung,Wochenendreinigung,0,-,0,0,-,1,0

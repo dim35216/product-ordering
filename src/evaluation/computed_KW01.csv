@@ -1,0 +1,24 @@
+Product,Name,Campaign,Volume,BottleCrate,NumShrink,NumTray,Packaging,PlannedPerformance,Quantity
+23545,Sterilisation zu Wochenbeginn,Sterilisation_zu_Wochenbeginn,0,-,0,0,-,1,0
+22721,Rivella Blau Sc 6x150 PE HPB,Blau,150,False,1,6,HPB,13500,55000
+18920,Riv. Blau Sc 6x150 PE Halbpalett,Blau,150,False,1,6,Halbpaletten,13500,35000
+15951,Rivella Blau Tr 4x6x50 PE,Blau,50,False,4,6,Normal,18000,150000
+16215,Rivella Blau Tr 4x6x50 PE HPB,Blau,50,False,4,6,HPB,18000,50000
+12021,Rivella Blau Tr 24x50 PE,Blau,50,False,1,24,Normal,19500,70000
+12020,Rivella Rot Tr 24x50 PE,Rot,50,False,1,24,Normal,19500,100000
+15227,Rivella Rot Sc 6x100 PE,Rot,100,False,1,6,Normal,13000,15000
+18919,Rivella Rot Sc 6x150 PE Halbpaletten,Rot,150,False,1,6,Halbpaletten,13500,55000
+22720,Rivella Rot Sc 6x150 PE HPB,Rot,150,False,1,6,HPB,13500,20000
+15101,Rivella Rot Sc 6x150 PE,Rot,150,False,1,6,Normal,13500,95000
+21849,Rivella Refresh Sc 6x125 PE HPB,Refresh,125,False,1,6,HPB,13500,16000
+23614,Rivella Refresh Sc 6x150 PE HPB,Refresh,150,False,1,6,HPB,13500,40000
+21847,Rivella Refresh Tr 4x6x50 PE HPB,Refresh,50,False,4,6,HPB,18000,10000
+21846,Rivella Refresh Tr 4x6x50 PE,Refresh,50,False,4,6,Normal,18000,15000
+21865,Rivella Refresh Tr 24x50 PE,Refresh,50,False,1,24,Normal,19500,20000
+15099,Rivella Grüntee Sc 6x150 PE,Gruentee,150,False,1,6,Normal,13500,5000
+15229,Rivella Grüntee Sc 6x100 PE,Gruentee,100,False,1,6,Normal,13000,8000
+15952,Rivella Grüntee Tr 4x6x50 PE,Gruentee,50,False,4,6,Normal,18000,30000
+13327,Rivella Grüntee Tr 24x50 PE,Gruentee,50,False,1,24,Normal,19500,35000
+23149,Rivella Grapefruit Tr 24x50 PE,Grapefruit,50,False,1,24,Normal,19000,4000
+23151,Rivella Grapefruit Tr 4x6x50 PE,Grapefruit,50,False,4,6,Normal,17500,34000
+23547,Wochenendreinigung,Wochenendreinigung,0,-,0,0,-,1,0
